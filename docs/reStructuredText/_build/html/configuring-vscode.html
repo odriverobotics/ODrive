@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuring Visual Studio Code &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setting up Eclipse development environment" href="configuring-eclipse.html" />
+    <link rel="prev" title="ODrive Firmware Developer Guide" href="developer-guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuring Visual Studio Code</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup-procedure">Setup Procedure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-firmware">Building the Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flashing-the-firmware">Flashing the Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging">Debugging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cleaning-the-build">Cleaning the Build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Configuring Visual Studio Code</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/configuring-vscode.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="configuring-visual-studio-code">
+<span id="configuring-vscode"></span><h1>Configuring Visual Studio Code<a class="headerlink" href="#configuring-visual-studio-code" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#setup-procedure" id="id1">Setup Procedure</a></p></li>
+<li><p><a class="reference internal" href="#building-the-firmware" id="id2">Building the Firmware</a></p></li>
+<li><p><a class="reference internal" href="#flashing-the-firmware" id="id3">Flashing the Firmware</a></p></li>
+<li><p><a class="reference internal" href="#debugging" id="id4">Debugging</a></p></li>
+<li><p><a class="reference internal" href="#cleaning-the-build" id="id5">Cleaning the Build</a></p></li>
+</ul>
+</div>
+<p>VSCode is the recommended IDE for working with the ODrive codebase.
+It is a light-weight text editor with Git integration and GDB debugging functionality.</p>
+<p>Before doing the VSCode setup, make sure you’ve installed all of your <a class="reference internal" href="developer-guide.html#dev-prereq"><span class="std std-ref">prerequisites.</span></a></p>
+<div class="section" id="setup-procedure">
+<h2><a class="toc-backref" href="#id1">Setup Procedure</a><a class="headerlink" href="#setup-procedure" title="Permalink to this headline"></a></h2>
+<ol class="arabic">
+<li><p>Clone the ODrive repository</p></li>
+<li><p><a class="reference external" href="https://code.visualstudio.com/download">Download VSCode</a></p></li>
+<li><p>Open VSCode</p></li>
+<li><p>Install extensions.  This can be done directly from VSCode (<kbd class="kbd docutils literal notranslate">Ctrl</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">Shift</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">X</kbd>)</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Required extensions:</dt><dd><ul>
+<li><p>C/C++ <code class="code docutils literal notranslate"><span class="pre">ext</span> <span class="pre">install</span> <span class="pre">ms-vscode.cpptools</span></code></p></li>
+<li><p>Cortex-Debug <code class="code docutils literal notranslate"><span class="pre">ext</span> <span class="pre">install</span> <span class="pre">marus25.cortex-debug</span></code></p></li>
+<li><p>Cortex-Debug: Device Support Pack - STM32F4 <code class="code docutils literal notranslate"><span class="pre">ext</span> <span class="pre">install</span> <span class="pre">marus25.cortex-debug-dp-stm32f4</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Recommended Extensions:</dt><dd><ul>
+<li><p>Include Autocomplete</p></li>
+<li><p>Path Autocomplete</p></li>
+<li><p>Auto Comment Blocks</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Create an environment variable named <code class="code docutils literal notranslate"><span class="pre">ARM_GCC_ROOT</span></code> whose value is the location of the <code class="code docutils literal notranslate"><span class="pre">GNU</span> <span class="pre">Arm</span> <span class="pre">Embedded</span> <span class="pre">Toolchain</span></code> (.e.g <code class="code docutils literal notranslate"><span class="pre">C:\Program</span> <span class="pre">Files</span> <span class="pre">(x86)\GNU</span> <span class="pre">Tools</span> <span class="pre">Arm</span> <span class="pre">Embedded\7</span> <span class="pre">2018-q2-update</span></code>) that you installed in the prerequisites section of the developer’s guide.
+This is not strictly needed for Linux or Mac, and you can alternatively use the <code class="code docutils literal notranslate"><span class="pre">Cortex-debug:</span> <span class="pre">Arm</span> <span class="pre">Toolchain</span> <span class="pre">Path</span></code> setting in VSCode extension settings.</p></li>
+<li><p>Relaunch VSCode</p></li>
+<li><p>Open the VSCode Workspace file, which is located in the root of the ODrive repository.  It is called <code class="code docutils literal notranslate"><span class="pre">ODrive_Workspace.code-workspace</span></code>.
+The first time you open it, VSCode will install some dependencies.  If it fails, you may need to <a class="reference external" href="https://code.visualstudio.com/docs/getstarted/settings">change your proxy settings</a>.</p></li>
+</ol>
+<p>You should now be ready to compile and test the ODrive project.</p>
+</div>
+<div class="section" id="building-the-firmware">
+<h2><a class="toc-backref" href="#id2">Building the Firmware</a><a class="headerlink" href="#building-the-firmware" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><strong>Terminal</strong> -&gt; <strong>Run Build Task</strong> (<kbd class="kbd docutils literal notranslate">Ctrl1</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">Shift</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">B</kbd>)</p></li>
+</ul>
+<p>A terminal window will open with your native shell.  VSCode is configured to run the command <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">-j4</span></code> in this terminal.</p>
+</div>
+<div class="section" id="flashing-the-firmware">
+<h2><a class="toc-backref" href="#id3">Flashing the Firmware</a><a class="headerlink" href="#flashing-the-firmware" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><strong>Terminal</strong> -&gt; <strong>Run Task</strong> -&gt; <strong>flash</strong></p></li>
+</ul>
+<p>A terminal window will open with your native shell.  VSCode is configured to run the command <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">flash</span></code> in this terminal.</p>
+<p>If the flashing worked, you can connect to the board using the <a class="reference internal" href="index.html#odrivetool-startup"><span class="std std-ref">odrivetool</span></a>.</p>
+</div>
+<div class="section" id="debugging">
+<h2><a class="toc-backref" href="#id4">Debugging</a><a class="headerlink" href="#debugging" title="Permalink to this headline"></a></h2>
+<p>An extension called Cortex-Debug has recently been released which is designed specifically for debugging ARM Cortex projects.
+You can read more on Cortex-Debug <a class="reference external" href="https://github.com/Marus/cortex-debug">here.</a></p>
+<p>Note: If developing on Windows, you should have <code class="code docutils literal notranslate"><span class="pre">arm-none-eabi-gdb</span></code> and <code class="code docutils literal notranslate"><span class="pre">openOCD</span></code> on your PATH.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Make sure you have the Firmware folder as your active folder</p></li>
+<li><p>Set <code class="code docutils literal notranslate"><span class="pre">CONFIG_DEBUG=true</span></code> in the tup.config file</p></li>
+<li><p>Flash the board with the newest code (starting debug session doesn’t do this)</p></li>
+<li><p>In the <strong>Run</strong> tab (<kbd class="kbd docutils literal notranslate">Ctrl</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">Shift</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">D</kbd>), select “Debug ODrive (Firmware)”</p></li>
+<li><p>Press <strong>Start Debugging</strong> (or press <kbd class="kbd docutils literal notranslate">F5</kbd>)</p></li>
+<li><p>The processor will reset and halt.</p></li>
+<li><p>Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won’t get applied.</p></li>
+<li><p><strong>Continue</strong> (press <kbd class="kbd docutils literal notranslate">F5</kbd>)</p></li>
+<li><p>Stepping over/in/out, restarting, and changing breakpoints can be done by first pressing the “pause” (F6) button at the top the screen.</p></li>
+<li><p>When done debugging, simply stop (<kbd class="kbd docutils literal notranslate">Shift</kbd> <strong>+</strong> <kbd class="kbd docutils literal notranslate">F5</kbd>) the debugger.  It will kill your openOCD process too.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="cleaning-the-build">
+<h2><a class="toc-backref" href="#id5">Cleaning the Build</a><a class="headerlink" href="#cleaning-the-build" title="Permalink to this headline"></a></h2>
+<p>This sometimes needs to be done if you change branches.</p>
+<ul class="simple">
+<li><p>Open a terminal (<strong>View</strong> -&gt; <strong>Integrated Terminal</strong>) and enter <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code></p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="developer-guide.html" class="btn btn-neutral float-left" title="ODrive Firmware Developer Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="configuring-eclipse.html" class="btn btn-neutral float-right" title="Setting up Eclipse development environment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

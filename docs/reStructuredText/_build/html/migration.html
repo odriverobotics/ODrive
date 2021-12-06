@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Migration Guide &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CAN Bus Guide for ODrive" href="can-guide.html" />
+    <link rel="prev" title="Hoverboard motor and remote control setup guide" href="hoverboard.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Migration Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#v0-5-1-v0-5-2">v0.5.1 -&gt; v0.5.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gpio-modes">GPIO Modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#braking-behavior">Braking Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-direction-settings">Step/Direction Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#previously">previously:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#v0-5-2">v0.5.2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#api-changes">API changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v0-4-12-v0-5-1">v0.4.12 -&gt; v0.5.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-changes">Unit Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#control-parameter-names">Control Parameter Names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#guide">Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#affected-variables">Affected Variables</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Migration Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/migration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="migration-guide">
+<h1>Migration Guide<a class="headerlink" href="#migration-guide" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#v0-5-1-v0-5-2" id="id1">v0.5.1 -&gt; v0.5.2</a></p></li>
+<li><p><a class="reference internal" href="#gpio-modes" id="id2">GPIO Modes</a></p></li>
+<li><p><a class="reference internal" href="#braking-behavior" id="id3">Braking Behavior</a></p></li>
+<li><p><a class="reference internal" href="#step-direction-settings" id="id4">Step/Direction Settings</a></p></li>
+<li><p><a class="reference internal" href="#api-changes" id="id5">API changes</a></p></li>
+<li><p><a class="reference internal" href="#v0-4-12-v0-5-1" id="id6">v0.4.12 -&gt; v0.5.1</a></p></li>
+<li><p><a class="reference internal" href="#unit-changes" id="id7">Unit Changes</a></p></li>
+<li><p><a class="reference internal" href="#control-parameter-names" id="id8">Control Parameter Names</a></p></li>
+<li><p><a class="reference internal" href="#guide" id="id9">Guide</a></p></li>
+</ul>
+</div>
+<div class="section" id="v0-5-1-v0-5-2">
+<h2><a class="toc-backref" href="#id1">v0.5.1 -&gt; v0.5.2</a><a class="headerlink" href="#v0-5-1-v0-5-2" title="Permalink to this headline"></a></h2>
+<p>The change from v0.5.1 to v0.5.2 had fewer breaking changes than the v0.4.12 to v0.5.1 change.</p>
+</div>
+<div class="section" id="gpio-modes">
+<h2><a class="toc-backref" href="#id2">GPIO Modes</a><a class="headerlink" href="#gpio-modes" title="Permalink to this headline"></a></h2>
+<p>The GPIO configuration is now more explicit. For example, to use <code class="code docutils literal notranslate"><span class="pre">gpio1</span></code> for for step signals (as part of a step/dir interface), it must be set to</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">gpio1_mode</span> <span class="o">=</span> <span class="n">GPIO_MODE_DIGITAL</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="braking-behavior">
+<h2><a class="toc-backref" href="#id3">Braking Behavior</a><a class="headerlink" href="#braking-behavior" title="Permalink to this headline"></a></h2>
+<p>Before using the brake resistor, it must be explicitly enabled as follows:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_brake_resistor</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>and then save the configuration and reboot for the setting to take effect.</p>
+</div>
+<div class="section" id="step-direction-settings">
+<h2><a class="toc-backref" href="#id4">Step/Direction Settings</a><a class="headerlink" href="#step-direction-settings" title="Permalink to this headline"></a></h2>
+<p>Previously, steps were added incrementally to <code class="code docutils literal notranslate"><span class="pre">input_pos</span></code>.
+This caused issues with accumulated floating point rounding error.
+Now, an absolute step count is used.
+This change requires that the circular setpoints mode is used <code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.controller.config.circular_setpoints</span> <span class="pre">=</span> <span class="pre">True</span></code> when step/dir signals are used.</p>
+<p>In addition, <code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.config.turns_per_step</span></code> has been removed and <code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.controller.config.steps_per_circular_range</span></code> is used.</p>
+<p>For example:</p>
+<div class="section" id="previously">
+<h3>previously:<a class="headerlink" href="#previously" title="Permalink to this headline"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">turns_per_step</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">1024.0</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="v0-5-2">
+<h3>v0.5.2<a class="headerlink" href="#v0-5-2" title="Permalink to this headline"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">circular_setpoints</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">circular_setpoint_range</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">steps_per_circular_range</span> <span class="o">=</span> <span class="mi">1024</span>
+</pre></div>
+</div>
+<p>For best results, set both the circular range and steps per circular range to powers of 2.</p>
+</div>
+</div>
+<div class="section" id="api-changes">
+<h2><a class="toc-backref" href="#id5">API changes</a><a class="headerlink" href="#api-changes" title="Permalink to this headline"></a></h2>
+<p>For other API changes, see the Changelog file on github.</p>
+</div>
+<div class="section" id="v0-4-12-v0-5-1">
+<h2><a class="toc-backref" href="#id6">v0.4.12 -&gt; v0.5.1</a><a class="headerlink" href="#v0-4-12-v0-5-1" title="Permalink to this headline"></a></h2>
+<p>Certain changes occurred between firmware versions v0.4.12 and v0.5.1 that will break existing configurations.
+This document is a guide for how to take a working v0.4.12 ODrive config and change it to work with firmware v0.5.1.</p>
+</div>
+<div class="section" id="unit-changes">
+<h2><a class="toc-backref" href="#id7">Unit Changes</a><a class="headerlink" href="#unit-changes" title="Permalink to this headline"></a></h2>
+<p>ODrive now uses units of [turns], [turns/s], and [turns/s^2] instead of [counts], [counts/s], and [counts/s^2].
+In addition, the motor controller class now has an input command of torque in [Nm] instead of current in [Amps].
+In general, every user-facing parameter that has to do with position or velocity is affected by the unit change.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the torque to be in correct in [Nm] you need to configure the <code class="code docutils literal notranslate"><span class="pre">motor.config.torque_constant</span></code>.
+See the updated <a class="reference internal" href="index.html#motor-config"><span class="std std-ref">getting started</span></a> for more details.</p>
+</div>
+</div>
+<div class="section" id="control-parameter-names">
+<h2><a class="toc-backref" href="#id8">Control Parameter Names</a><a class="headerlink" href="#control-parameter-names" title="Permalink to this headline"></a></h2>
+<p>ODrive now uses <code class="code docutils literal notranslate"><span class="pre">input_pos</span></code>, <code class="code docutils literal notranslate"><span class="pre">input_vel</span></code>, and <code class="code docutils literal notranslate"><span class="pre">input_torque</span></code> as commands instead of <code class="code docutils literal notranslate"><span class="pre">pos_setpoint</span></code>, <code class="code docutils literal notranslate"><span class="pre">vel_setpoint</span></code>, and <code class="code docutils literal notranslate"><span class="pre">current_setpoint</span></code>.</p>
+</div>
+<div class="section" id="guide">
+<h2><a class="toc-backref" href="#id9">Guide</a><a class="headerlink" href="#guide" title="Permalink to this headline"></a></h2>
+<p>For a working v0.4.12 ODrive configuration, use the following equations to convert parameters as required.</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">pos_gain</span></code> is unaffected ( [counts/s / count] <cite>*</cite>&gt; [turns/s / turns] )</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">vel_gain</span></code> is <code class="code docutils literal notranslate"><span class="pre">vel_gain_old</span> <span class="pre">*</span> <span class="pre">torque_constant</span> <span class="pre">*</span> <span class="pre">encoder</span> <span class="pre">cpr</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">vel_integrator_gain</span></code> is <code class="code docutils literal notranslate"><span class="pre">vel_integrator_gain_old</span> <span class="pre">*</span> <span class="pre">torque_constant</span> <span class="pre">*</span> <span class="pre">encoder</span> <span class="pre">cpr</span></code></p></li>
+</ul>
+<p>For other values, [turns] = [counts] / [encoder cpr]. Converting [counts/s] and [counts/s^2] is similar.</p>
+<div class="section" id="affected-variables">
+<h3>Affected Variables<a class="headerlink" href="#affected-variables" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.input_pos</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.input_vel</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.input_torque</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.vel_limit</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.vel_ramp_rate</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.current_ramp_rate</span></code> is now <code class="code docutils literal notranslate"><span class="pre">axis.controller.config.torque_ramp_rate</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.circular_setpoint_range</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.inertia</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.config.homing_speed</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.pos_setpoint</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.vel_setpoint</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.controller.torque_setpoint</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">axis.controller.current_setpoint</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.trap_traj.config.vel_limit</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.trap_traj.config.accel_limit</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.trap_traj.config.decel_limit</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.encoder.pos_estimate</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.encoder.pos_estimate_circular</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.encoder.vel_estimate</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.config.counts_per_step</span></code> is now <code class="code docutils literal notranslate"><span class="pre">turns_per_step</span></code> for the step/direction interface</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis.sensorless_estimator.vel_estimate</span></code> is in mechanical [turns/s] instead of electrical [radians/s]</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hoverboard.html" class="btn btn-neutral float-left" title="Hoverboard motor and remote control setup guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="can-guide.html" class="btn btn-neutral float-right" title="CAN Bus Guide for ODrive" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

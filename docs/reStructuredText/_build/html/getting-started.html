@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting Started &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script src="_static/tabs.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="odrivetool" href="odrivetool.html" />
+    <link rel="prev" title="Getting Started" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-requirements">Hardware Requirements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wiring-up-the-odrive">Wiring up the ODrive</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wiring-up-the-motors">Wiring up the motors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wiring-up-the-encoders">Wiring up the encoders</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#safety-power-up">Safety &amp; Power UP</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#downloading-and-installing-odriveool">Downloading and Installing <code class="code docutils literal notranslate"><span class="pre">odriveool</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firmware">Firmware</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#start-odrivetool">Start <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#motor-configuration">Motor Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setting-the-limits">Setting the Limits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#current-limit">Current limit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#velocity-limit">Velocity limit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calibration-current">Calibration Current</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-other-hardware-parameters">Setting Other Hardware Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#enable-brake-resistor">Enable Brake Resistor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#brake-resistor-value">Brake Resistor Value</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#negative-current">Negative Current</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pole-pairs">Pole Pairs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#torque-constant">Torque Constant</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#motor-type">Motor Type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#motor-thermistor">Motor Thermistor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#encoder-configuration">Encoder Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#with-encoder">With Encoder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#without-encoder">Without Encoder</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#save-configuration">Save Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#position-control-of-m0">Position control of M0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#other-control-modes">Other Control Modes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#watchdog-timer">Watchdog Timer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-s-next">What’s next?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upgrading-from-0-4-12">Upgrading from 0.4.12</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Getting Started</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/getting-started.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#hardware-requirements" id="id1">Hardware Requirements</a></p></li>
+<li><p><a class="reference internal" href="#start-odrivetool" id="id2">Start <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></p></li>
+<li><p><a class="reference internal" href="#motor-configuration" id="id3">Motor Configuration</a></p></li>
+<li><p><a class="reference internal" href="#encoder-configuration" id="id4">Encoder Configuration</a></p></li>
+<li><p><a class="reference internal" href="#save-configuration" id="id5">Save Configuration</a></p></li>
+<li><p><a class="reference internal" href="#position-control-of-m0" id="id6">Position control of M0</a></p></li>
+<li><p><a class="reference internal" href="#watchdog-timer" id="id7">Watchdog Timer</a></p></li>
+<li><p><a class="reference internal" href="#what-s-next" id="id8">What’s next?</a></p></li>
+<li><p><a class="reference internal" href="#upgrading-from-0-4-12" id="id9">Upgrading from 0.4.12</a></p></li>
+</ul>
+</div>
+<div class="section" id="hardware-requirements">
+<h2><a class="toc-backref" href="#id1">Hardware Requirements</a><a class="headerlink" href="#hardware-requirements" title="Permalink to this headline"></a></h2>
+<p><strong>You will need</strong></p>
+<ul class="simple">
+<li><p>One or two <a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y">brushless motors</a>. It is fine, even recommended, to start testing with just a single motor and encoder.</p></li>
+<li><p>One or two <a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU">encoder(s)</a>.</p></li>
+<li><p>A power supply (12V-24V for the 24V board variant, 12V-56V for the 56V board variant). A battery is also fine. Some advice on choosing a power supply can be found <a class="reference external" href="https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html">here</a>.</p></li>
+</ul>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+What voltage variant do I have?<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.</p>
+<p class="card-text">ODrives before this may or may not have this label. If you don’t have a label, then you can look at the bus capacitors (8 gray cylinder components on the underside of the board). If they read 470uF, you have a 24V version; if they read 120uF you have a 48V version.</p>
+</div>
+</details><ul class="simple">
+<li><p>A power resistor. A good starting point would be the 50W resistor included with your ODrive.</p></li>
+</ul>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+Do I really need a power resistor? What values to choose?<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">If you don’t have a brake resistor, the ODrive will pump excess power back into the power supply during deceleration to achieve the desired deceleration torque. If your power supply doesn’t eat that power (which it won’t if it’s not a battery), the bus voltage will inevitebly rise. If you’re unlucky this will break the power supply.
+At some point, the ODrive’s overvoltage protection will trip, after which both motors will be allowed to spin freely. Depending on your machine, this may or may not be a problem.</p>
+<p class="card-text">The power resistor values you need depends on your motor setup, and peak/average deceleration power.</p>
+<p class="card-text">To be on the safe side, think about what speed and current limits you want to set for the motor.</p>
+<p class="card-text">When braking at max speed and with maximum motor current, the power that is dissipated in the power resistor can be calulated as: <cite>P_brake = V_emf * I_motor</cite> where <cite>V_emf = motor_rpm / motor_kv</cite>.</p>
+</div>
+</details><div class="section" id="wiring-up-the-odrive">
+<h3>Wiring up the ODrive<a class="headerlink" href="#wiring-up-the-odrive" title="Permalink to this headline"></a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Firmware, software, and documentation is intended for use with ODrive motor controllers purchased from odriverobotics.com. ODrive Robotics does not sell products through any channel other than odriverobotics.com. We do not provide support for ODrives purchased elsewhere.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disastrous oscillations or runaway.</p>
+</div>
+<p>All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and newer.</p>
+<div class="section" id="wiring-up-the-motors">
+<h4>Wiring up the motors<a class="headerlink" href="#wiring-up-the-motors" title="Permalink to this headline"></a></h4>
+<p>Connect the motor phases into the 3-phase screw terminals. It is not recommended to use a clip-on connector such as an alligator clip, as this can cause issues with the phase resistance/inductance measurements.</p>
+</div>
+<div class="section" id="wiring-up-the-encoders">
+<h4>Wiring up the encoders<a class="headerlink" href="#wiring-up-the-encoders" title="Permalink to this headline"></a></h4>
+<p>Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (&lt;4mA), you may want to desolder the pull-ups.</p>
+<a class="reference internal image-reference" href="_images/ODriveBasicWiring.png"><img alt="_images/ODriveBasicWiring.png" class="align-center" src="_images/ODriveBasicWiring.png" style="width: 686.0px; height: 512.4px;" /></a>
+</div>
+<div class="section" id="safety-power-up">
+<h4>Safety &amp; Power UP<a class="headerlink" href="#safety-power-up" title="Permalink to this headline"></a></h4>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.</p>
+</div>
+<ul class="simple">
+<li><p>Unlike some devices, the ODrive does not recieve power over the USB port so the 24/56 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.</p></li>
+<li><p>To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. Try to connect the power source first and then turn it on to avoid inrush current. If this can’t be avoided then a small spark is normal. This is caused by the capacitors charging up.</p></li>
+<li><p>Make sure to avoid a ground loop! See the <a class="reference internal" href="ground-loops.html#ground-loops"><span class="std std-ref">ground loop page</span></a> for details.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="downloading-and-installing-odriveool">
+<span id="install-odrivetool"></span><h3>Downloading and Installing <code class="code docutils literal notranslate"><span class="pre">odriveool</span></code><a class="headerlink" href="#downloading-and-installing-odriveool" title="Permalink to this headline"></a></h3>
+<p>Most instructions in this guide refer to a utility called <cite>odrivetool</cite>, so you should install that first.</p>
+<div class="sphinx-tabs docutils container">
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-0-0" aria-selected="true" class="sphinx-tabs-tab" id="tab-0-0-0" name="0-0" role="tab" tabindex="0">Windows</button><button aria-controls="panel-0-0-1" aria-selected="false" class="sphinx-tabs-tab" id="tab-0-0-1" name="0-1" role="tab" tabindex="-1">OSX</button><button aria-controls="panel-0-0-2" aria-selected="false" class="sphinx-tabs-tab" id="tab-0-0-2" name="0-2" role="tab" tabindex="-1">Linux</button></div><div aria-labelledby="tab-0-0-0" class="sphinx-tabs-panel" id="panel-0-0-0" name="0-0" role="tabpanel" tabindex="0"><ol class="arabic">
+<li><p>Install Python 3</p>
+<blockquote>
+<div><p>We recommend the Anaconda distribution because it packs a lot of useful scientific tools, however you can also install the standalone python.</p>
+<ul class="simple">
+<li><p><strong>Anaconda</strong>: Download the installer from <a class="reference external" href="https://www.anaconda.com/download/#windows">here</a>. Execute the downloaded file and follow the instructions.</p></li>
+<li><p><strong>Standalone Python</strong>: Download the installer for 3.8.6 from <a class="reference external" href="https://www.python.org/downloads/release/python-386/">here</a>. Execute the downloaded file and follow the instructions.  As of Oct 2020, Matplotlib (required by odrivetool) had not been updated to work with 3.9, so please use 3.8.6.</p></li>
+<li><p>If you have Python 2 installed alongside Python 3, replace <code class="code docutils literal notranslate"><span class="pre">pip</span></code> by <code class="code docutils literal notranslate"><span class="pre">C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python36-32\Scripts\pip</span></code>. If you have trouble with this step then refer to <a class="reference external" href="https://www.youtube.com/watch?v=jnpC_Ib_lbc">this walkthrough</a>.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Launch the command prompt.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Anaconda</strong>: In the start menu, type <code class="code docutils literal notranslate"><span class="pre">Anaconda</span> <span class="pre">Prompt</span></code> <kbd class="kbd docutils literal notranslate">Enter</kbd></p></li>
+<li><p><strong>Standalone Python</strong> In the start menu, type <code class="code docutils literal notranslate"><span class="pre">cmd</span></code> <kbd class="kbd docutils literal notranslate">Enter</kbd></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Install odrivetool by running</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>pip install --upgrade odrive
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</div><div aria-labelledby="tab-0-0-1" class="sphinx-tabs-panel" hidden="true" id="panel-0-0-1" name="0-1" role="tabpanel" tabindex="0"><p>We are going to run the following commands for installation in Terminal.</p>
+<ol class="arabic">
+<li><p>If you don’t already have it, install homebrew:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>/usr/bin/ruby -e <span class="s2">&quot;</span><span class="k">$(</span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install<span class="k">)</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Install python:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>brew install python
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you get an error saying <cite>python 2.7.* is already installed</cite>, then upgrade to Python 3 by running:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>brew upgrade python
+</pre></div>
+</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Install libusb:</p>
+<blockquote>
+<div><p>libusb is required for odrivetool to communicate with the ODrive:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>brew install libusb
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li id="installodrivetool"><p>Install odrivetool:</p>
+<blockquote>
+<div><p>Now that you have Python 3 and all the package managers, run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>pip3 install --upgrade odrive
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p><strong>Troubleshooting</strong></p>
+<ol class="arabic">
+<li><p>Permission Errors:</p>
+<blockquote>
+<div><p>Just run the previous command in sudo</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo pip3 install --upgrade odrive
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Dependency Errors:</p>
+<blockquote>
+<div><p>If the installer doesn’t complete and you get a dependency error (Ex. <code class="code docutils literal notranslate"><span class="pre">No</span> <span class="pre">module...`</span></code> or <code class="code docutils literal notranslate"><span class="pre">module_name</span> <span class="pre">not</span> <span class="pre">found</span></code>), run the command</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo pip3 install module_name
+</pre></div>
+</div>
+<p>and try to <a class="reference internal" href="index.html#installodrivetool"><span class="std std-ref">install odrivetool</span></a> again.</p>
+</div></blockquote>
+</li>
+<li><p>Other Install Errors:</p>
+<blockquote>
+<div><p>If the installer fails at installing dependencies, try</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo pip3 install odrive --no-deps
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you do this, brace yourself for runtime errors when you run <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> (the basic functionality should work though).</p>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</div><div aria-labelledby="tab-0-0-2" class="sphinx-tabs-panel" hidden="true" id="panel-0-0-2" name="0-2" role="tabpanel" tabindex="0"><ol class="arabic">
+<li><p><a class="reference external" href="https://www.python.org/downloads/">Install Python 3</a>.</p>
+<blockquote>
+<div><p>For example, on Ubuntu, run</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo apt install python3 python3-pip
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Install odrivetool by opening a terminal and typing</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo pip3 install --upgrade odrive
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This should automatically add the udev rules. If this fails for some reason you can add them manually:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> <span class="s1">&#39;SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1209&quot;, ATTR{idProduct}==&quot;0d[0-9][0-9]&quot;, MODE=&quot;0666&quot;&#39;</span> <span class="p">|</span> sudo tee /etc/udev/rules.d/91-odrive.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+</pre></div>
+</div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<div class="admonition-ubuntu-raspbian admonition">
+<p class="admonition-title"><strong>Ubuntu</strong>, <strong>Raspbian</strong></p>
+<p>If you can’t invoke <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> at this point, try adding <code class="code docutils literal notranslate"><span class="pre">~/.local/bin</span></code> to your <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>, <a class="reference external" href="https://unix.stackexchange.com/a/392710/176715">see related bug</a>.
+This is done for example by running <code class="code docutils literal notranslate"><span class="pre">nano</span> <span class="pre">~/.bashrc</span></code>, scrolling to the bottom, pasting <code class="code docutils literal notranslate"><span class="pre">export</span> <span class="pre">PATH=$PATH:~/.local/bin</span></code>, and then saving and closing, then close and reopen the terminal window.</p>
+</div>
+</div></div>
+</div>
+<div class="section" id="firmware">
+<h3>Firmware<a class="headerlink" href="#firmware" title="Permalink to this headline"></a></h3>
+<p>To simplify the start up procedure we suggest using the latest firmware verion. Please follow the instructions <a class="reference internal" href="odrivetool.html#firmware-update"><span class="std std-ref">here</span></a> to make sure your firmware is up to date.</p>
+<div class="admonition-odrive-v3-5-and-later admonition">
+<p class="admonition-title"><strong>ODrive v3.5 and later</strong></p>
+<p>Your board should come preflashed with the latest firmware. If you run into problems, check your firmware version and upgrade if possible.</p>
+</div>
+<div class="admonition-odrive-v3-4-and-earlier admonition">
+<p class="admonition-title"><strong>ODrive v3.4 and earlier</strong></p>
+<p>Your board does <strong>not</strong> come preflashed with any firmware. Follow the instructions <a class="reference internal" href="odrivetool.html#st-link-flash"><span class="std std-ref">here</span></a> on the ST Link procedure before you continue.</p>
+</div>
+</div>
+</div>
+<div class="section" id="start-odrivetool">
+<span id="odrivetool-startup"></span><h2><a class="toc-backref" href="#id2">Start <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a><a class="headerlink" href="#start-odrivetool" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>To launch the main interactive ODrive tool, type <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> and <kbd class="kbd docutils literal notranslate">Enter</kbd>.</p></li>
+<li><p>Connect your ODrive and wait for the tool to find it. If it dos not connect after a few seconds refer to the <a class="reference internal" href="troubleshooting.html#troubleshooting"><span class="std std-ref">troubleshooting guide</span></a>.</p></li>
+<li><p>Now you can, for instance type <code class="code docutils literal notranslate"><span class="pre">odrv0.vbus_voltage</span></code> <kbd class="kbd docutils literal notranslate">Enter</kbd> to inspect the boards main supply voltage.</p></li>
+</ul>
+<p>It should look something like this:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">ODrive</span> <span class="n">control</span> <span class="n">utility</span> <span class="n">v0</span><span class="o">.</span><span class="mf">5.4</span>
+<span class="n">Please</span> <span class="n">connect</span> <span class="n">your</span> <span class="n">ODrive</span><span class="o">.</span>
+<span class="n">Type</span> <span class="n">help</span><span class="p">()</span> <span class="k">for</span> <span class="n">help</span><span class="o">.</span>
+
+<span class="n">Connected</span> <span class="n">to</span> <span class="n">ODrive</span> <span class="mi">306</span><span class="n">A396A3235</span> <span class="k">as</span> <span class="n">odrv0</span>
+<span class="n">In</span> <span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">odrv0</span><span class="o">.</span><span class="n">vbus_voltage</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="mf">11.97055721282959</span>
+</pre></div>
+</div>
+<p>The tool you’re looking at is a fully capable Python command prompt, so you can type any valid python code.
+You can read more about <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> <a class="reference internal" href="odrivetool.html#odrivetool-doc"><span class="std std-ref">here</span></a>.</p>
+</div>
+<div class="section" id="motor-configuration">
+<span id="motor-config"></span><h2><a class="toc-backref" href="#id3">Motor Configuration</a><a class="headerlink" href="#motor-configuration" title="Permalink to this headline"></a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Read this section carefully, else you risk breaking something.</p>
+</div>
+<p>Configuration of a motor is done within the <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> console, type <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> and <kbd class="kbd docutils literal notranslate">Enter</kbd> to launch. Make sure you have completed :ref:` Start odrivetool &lt;odrivetool-startup&gt;` before continuing.</p>
+<p>This section assumes that the motor being configured is connected to the ODrive as M0 (<code class="code docutils literal notranslate"><span class="pre">axis0</span></code>). To configure M1, simply replace all instances of <code class="code docutils literal notranslate"><span class="pre">axis0</span></code> with <code class="code docutils literal notranslate"><span class="pre">axis1</span></code>.</p>
+<p>If any of the following steps fail, print the errors by running <code class="code docutils literal notranslate"><span class="pre">dump_errors(odrv0)</span></code> and refer to the <a class="reference internal" href="troubleshooting.html#error-codes"><span class="std std-ref">Error codes</span></a> section for debugging.
+Once the error(s) have been identified and corrected, run <code class="code docutils literal notranslate"><span class="pre">odrv0.clear_errors()</span></code> to clear them before moving forward.</p>
+<div class="admonition-working-on-a-hoverboard admonition">
+<p class="admonition-title">Working on a hoverboard?</p>
+<p>There is a <a class="reference internal" href="hoverboard.html#hoverboard-doc"><span class="std std-ref">separate guide</span></a> specifically for hoverboard motors</p>
+</div>
+<div class="section" id="setting-the-limits">
+<h3>Setting the Limits<a class="headerlink" href="#setting-the-limits" title="Permalink to this headline"></a></h3>
+<p>With <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> open you can assign variables directly by name.
+For instance, to set the current limit of M0 to 10A you would type</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">current_lim</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<div class="section" id="current-limit">
+<h4>Current limit<a class="headerlink" href="#current-limit" title="Permalink to this headline"></a></h4>
+<blockquote>
+<div><p>The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable.
+To change the current limit,</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">current_lim</span> <span class="o">=</span> <span class="n">val</span>
+</pre></div>
+</div>
+<p>Once you have tuned the ODrive, you can increase this to 60A to increase performance.</p>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+Need more than 60A?<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">For current limits above 60A, you must change the current amplifier gains.
+You do this by requesting a different current range. i.e. for 90A on M0</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">requested_current_range</span> <span class="o">=</span> <span class="mi">90</span>
+</pre></div>
+</div>
+<p class="card-text">then <a class="reference internal" href="index.html#save-config"><span class="std std-ref">save the configuration and reboot</span></a> as the gains are written out to the DRV (MOSFET driver) only during startup.</p>
+</div>
+</details><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.*</p>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+Ok, so tell me how it actually works then…<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">The current in the motor is only connected to the current in the power supply <cite>sometimes</cite> and other times it just cycles out of one phase and back in the other.
+This is what the modulation magnitude is (sometimes people call this duty cycle, but that’s a bit confusing because we use <a class="reference external" href="https://www.mathworks.com/solutions/power-electronics-control/space-vector-modulation.html">SVM</a> not straight PWM).
+When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply.
+When the magnitude is 100%, it is always connected, and at 50% it’s connected half the time, and cycled in just the motor half the time.</p>
+<p class="card-text">The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it’s not unreasonable to have 50A in the motor from 5A on the power supply.
+When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.</p>
+</div>
+</details></div>
+</div></blockquote>
+</div>
+<div class="section" id="velocity-limit">
+<h4>Velocity limit<a class="headerlink" href="#velocity-limit" title="Permalink to this headline"></a></h4>
+<p>The motor will be limited to this speed in [turn/s]. Again the default value is quite slow.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_limit</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="calibration-current">
+<h4>Calibration Current<a class="headerlink" href="#calibration-current" title="Permalink to this headline"></a></h4>
+<p>You can change <code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.motor.config.calibration_current</span></code> [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary.
+If you are using a small motor (i.e. 15A current rated) you may need to reduce <code class="code docutils literal notranslate"><span class="pre">calibration_current</span></code> to a value smaller than the default.</p>
+</div>
+</div>
+<div class="section" id="setting-other-hardware-parameters">
+<h3>Setting Other Hardware Parameters<a class="headerlink" href="#setting-other-hardware-parameters" title="Permalink to this headline"></a></h3>
+<div class="section" id="enable-brake-resistor">
+<h4>Enable Brake Resistor<a class="headerlink" href="#enable-brake-resistor" title="Permalink to this headline"></a></h4>
+<p>Set this to <cite>True</cite> if using a brake resistor. You need to <a class="reference internal" href="index.html#save-config"><span class="std std-ref">save the configuration and reboot</span></a> the ODrive for this to take effect.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_brake_resistor</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="brake-resistor-value">
+<h4>Brake Resistor Value<a class="headerlink" href="#brake-resistor-value" title="Permalink to this headline"></a></h4>
+<p>This is the resistance [Ohms] of the brake resistor. You can leave this at the default setting if you are not using a brake resistor.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">brake_resistance</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.</p>
+</div>
+</div>
+<div class="section" id="negative-current">
+<h4>Negative Current<a class="headerlink" href="#negative-current" title="Permalink to this headline"></a></h4>
+<p>This is the amount of current [Amps] allowed to flow back into the power supply. The convention is that it is negative. By default, it is set to a conservative value of 10mA. If you are using a brake resistor and getting <code class="code docutils literal notranslate"><span class="pre">DC_BUS_OVER_REGEN_CURRENT</span></code> errors, raise it slightly.
+If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source. Note that in that case, it should be higher than your motor current limit + current limit margin.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dc_max_negative_current</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pole-pairs">
+<h4>Pole Pairs<a class="headerlink" href="#pole-pairs" title="Permalink to this headline"></a></h4>
+<p>This is the number of <strong>magnet poles</strong> in the rotor, <strong>divided by two</strong>. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pole_pairs</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is <strong>not</strong> the same as the number of coils in the stator.</p>
+</div>
+<p>A good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents.
+This will be the number of pole pairs. If you can’t distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
+Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of <cite>pole pairs</cite>. If you use a ferrous piece of metal instead of a magnet, you will get the number of <cite>magnet poles</cite>.</p>
+</div>
+<div class="section" id="torque-constant">
+<h4>Torque Constant<a class="headerlink" href="#torque-constant" title="Permalink to this headline"></a></h4>
+<p>This is the ratio of torque produced by the motor per Amp of current delivered to the motor. This should be set to <strong>8.27 / (motor KV)</strong>.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">torque_constant</span>
+</pre></div>
+</div>
+<p>If you decide that you would rather command torque in units of Amps, you could simply set the torque constant to 1.</p>
+</div>
+<div class="section" id="motor-type">
+<h4>Motor Type<a class="headerlink" href="#motor-type" title="Permalink to this headline"></a></h4>
+<p>This is the type of motor being used. Currently two types of motors are supported: High-current motors (<cite>MOTOR_TYPE_HIGH_CURRENT, [0]</cite>) and gimbal motors (<cite>MOTOR_TYPE_GIMBAL, [2]</cite>).</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">motor_type</span>
+</pre></div>
+</div>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+Which <code class="code docutils literal notranslate"><span class="pre">motor_type</span></code> to choose?<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">If you’re using a regular hobby brushless motor like <a class="reference external" href="https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html">this</a> one, you should set <code class="code docutils literal notranslate"><span class="pre">motor_mode</span></code> to <code class="code docutils literal notranslate"><span class="pre">MOTOR_TYPE_HIGH_CURRENT</span></code>.
+For low-current gimbal motors like <a class="reference external" href="https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html">this</a> one, you should choose <code class="code docutils literal notranslate"><span class="pre">MOTOR_TYPE_GIMBAL</span></code>. Do not use <code class="code docutils literal notranslate"><span class="pre">MOTOR_TYPE_GIMBAL</span></code> on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.</p>
+<p class="card-text"><strong>Further detail:</strong>
+If 100’s of mA of current noise is “small” for you, you can choose <code class="code docutils literal notranslate"><span class="pre">MOTOR_TYPE_HIGH_CURRENT</span></code>.
+If 100’s of mA of current noise is “large” for you, and you do not intend to spin the motor very fast (Ω * L &lt;&lt; R), and the motor is fairly large resistance (1 ohm or larger), you can chose <code class="code docutils literal notranslate"><span class="pre">MOTOR_TYPE_GIMBAL</span></code>.
+If 100’s of mA current noise is “large” for you, <cite>and</cite> you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.</p>
+</div>
+</details><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using gimbal motors, <code class="code docutils literal notranslate"><span class="pre">current_lim</span></code> <cite>and</cite> <code class="code docutils literal notranslate"><span class="pre">calibration_current</span></code> actually mean <cite>voltage limit</cite> and <cite>calibration voltage</cite> respectively, since we don’t use current feedback.
+This means that if you set it to 10, it means 10V, despite the name of the parameter.</p>
+</div>
+</div>
+<div class="section" id="motor-thermistor">
+<h4>Motor Thermistor<a class="headerlink" href="#motor-thermistor" title="Permalink to this headline"></a></h4>
+<p>If using motor thermistor please see the <a class="reference internal" href="thermistors.html#thermistor-doc"><span class="std std-ref">thermistors</span></a> page for setup.</p>
+</div>
+</div>
+</div>
+<div class="section" id="encoder-configuration">
+<h2><a class="toc-backref" href="#id4">Encoder Configuration</a><a class="headerlink" href="#encoder-configuration" title="Permalink to this headline"></a></h2>
+<div class="section" id="with-encoder">
+<h3>With Encoder<a class="headerlink" href="#with-encoder" title="Permalink to this headline"></a></h3>
+<p>Set the encoder count per revolution [CPR] value</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">cpr</span>
+</pre></div>
+</div>
+<p>This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+If you purchased an encoder from our shop, you can find the parameters <a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">here</a>.</p>
+</div>
+<div class="section" id="without-encoder">
+<h3>Without Encoder<a class="headerlink" href="#without-encoder" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>If you wish to run in sensorless mode, please see <a class="reference internal" href="commands.html#sensorless-setup"><span class="std std-ref">Setting up sensorless.</span></a></p></li>
+<li><p>If you are using hall sensor feedback, please see the <a class="reference internal" href="hoverboard.html#hoverboard-doc"><span class="std std-ref">hoverboard motor example</span></a>.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="save-configuration">
+<span id="save-config"></span><h2><a class="toc-backref" href="#id5">Save Configuration</a><a class="headerlink" href="#save-configuration" title="Permalink to this headline"></a></h2>
+<p>You can save all <code class="code docutils literal notranslate"><span class="pre">.config</span></code> parameters to persistent memory so the ODrive remembers them between power cycles. This will reboot the board.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">save_configuration</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="position-control-of-m0">
+<h2><a class="toc-backref" href="#id6">Position control of M0</a><a class="headerlink" href="#position-control-of-m0" title="Permalink to this headline"></a></h2>
+<p>Let’s get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute <code class="code docutils literal notranslate"><span class="pre">axis1</span></code> wherever it says <code class="code docutils literal notranslate"><span class="pre">axis0</span></code>.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Start the calibratrion sequence by entering</p></li>
+</ol>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">requested_state</span> <span class="o">=</span> <span class="n">AXIS_STATE_FULL_CALIBRATION_SEQUENCE</span>
+</pre></div>
+</div>
+<p>and press <kbd class="kbd docutils literal notranslate">Enter</kbd>.</p>
+<p>After about 2 seconds you should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.</p>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+What’s the point of this?<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">This procedure first measures your motor’s electrical properties (namely phase resistance and phase inductance) and then the offset between the motor’s electrical phase and the encoder position.</p>
+</div>
+</details><p>The startup procedure is demonstrated <a class="reference external" href="https://www.youtube.com/watch?v=VCX1bA2xnuY">here</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The rotor must be allowed to rotate without any biased load during startup.
+That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
+Also note that in the video, the motors spin after initialization, but in the current software the default behaviour is not like that.</p>
+</div>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+Help, something isn’t working!<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of <code class="code docutils literal notranslate"><span class="pre">dump_errors(odrv0)</span></code> and then refer to the <a class="reference internal" href="troubleshooting.html#error-codes"><span class="std std-ref">error code documentation</span></a> for details.
+Once you understand the error and have fixed its cause, you may clear the error state with (<code class="code docutils literal notranslate"><span class="pre">odrv0.clear_errors()</span></code> <kbd class="kbd docutils literal notranslate">Enter</kbd>) and retry.</p>
+</div>
+</details><ol class="arabic">
+<li><p>Start closed loop control by typing</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">requested_state</span> <span class="o">=</span> <span class="n">AXIS_STATE_CLOSED_LOOP_CONTROL</span>
+</pre></div>
+</div>
+<p>and press <kbd class="kbd docutils literal notranslate">Enter</kbd>. From now on the ODrive will try to hold the motor’s position. If you try to turn it by hand, it will fight you gently. That is unless you bump up <code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.motor.config.current_lim</span></code>, in which case it will fight you more fiercely.
+If the motor begins to vibrate either immediately or after being disturbed you will need to <a class="reference internal" href="control.html#control-tuning"><span class="std std-ref">lower the controller gains</span></a>.</p>
+</div></blockquote>
+</li>
+<li><p>Send the motor a new position setpoint with</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_pos</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>The units are in turns.</p>
+</div></blockquote>
+</li>
+<li><p>At this point you will probably want to <a class="reference internal" href="control.html#control-doc"><span class="std std-ref">Properly tune</span></a> the motor controller in order to maximize system performance.</p></li>
+</ol>
+</div></blockquote>
+<div class="section" id="other-control-modes">
+<h3>Other Control Modes<a class="headerlink" href="#other-control-modes" title="Permalink to this headline"></a></h3>
+<p>The default control mode is unfiltered position control in the absolute encoder reference frame.
+The ODrive can be used with a variety of control modes, to learn more, check out the <a class="reference internal" href="control-modes.html#control-modes-doc"><span class="std std-ref">control modes</span></a> documentation page.</p>
+</div>
+</div>
+<div class="section" id="watchdog-timer">
+<h2><a class="toc-backref" href="#id7">Watchdog Timer</a><a class="headerlink" href="#watchdog-timer" title="Permalink to this headline"></a></h2>
+<p>Each axis has a configurable watchdog timer that can stop the motors if the
+control connection to the ODrive is interrupted.</p>
+<p>Each axis has a configurable watchdog timeout: <code class="code docutils literal notranslate"><span class="pre">axis.config.watchdog_timeout</span></code>,
+measured in seconds. Set</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">axis</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_watchdog</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>to turn on this feature.</p>
+<p>The watchdog is fed using the <code class="code docutils literal notranslate"><span class="pre">axis.watchdog_feed()</span></code> method of each axis.
+Some <a class="reference internal" href="ascii-protocol.html#acsii-cmd-ref"><span class="std std-ref">ascii commands</span></a> feed the watchdog automatically.</p>
+</div>
+<div class="section" id="what-s-next">
+<h2><a class="toc-backref" href="#id8">What’s next?</a><a class="headerlink" href="#what-s-next" title="Permalink to this headline"></a></h2>
+<p>You can now:
+* <a class="reference internal" href="control.html#control-doc"><span class="std std-ref">Properly tune</span></a> the motor controller to unlock the full potential of the ODrive.
+* See what other <a class="reference internal" href="commands.html#commands-doc"><span class="std std-ref">commands and parameters</span></a> are available, in order to better control the ODrive.
+* Control the ODrive from your own program or hook it up to an existing system through one of it’s <a class="reference internal" href="pinout.html#pinout-chart"><span class="std std-ref">interfaces</span></a>.
+* See how you can improve the behavior during the startup procedure, like <a class="reference internal" href="encoders.html#encoder-with-index-signal"><span class="std std-ref">bypassing encoder calibration</span></a>.
+* The CAN communication is the most reliable way of talking to ODrive in a real application.  Check out the <a class="reference internal" href="can-guide.html#can-guide"><span class="std std-ref">CAN Guide</span></a> and <a class="reference internal" href="can-protocol.html#can-protocol"><span class="std std-ref">CAN Protocol</span></a></p>
+<p>If you have any issues or any questions please get in touch. The <a class="reference external" href="https://discourse.odriverobotics.com/">ODrive Community</a> warmly welcomes you.</p>
+</div>
+<div class="section" id="upgrading-from-0-4-12">
+<h2><a class="toc-backref" href="#id9">Upgrading from 0.4.12</a><a class="headerlink" href="#upgrading-from-0-4-12" title="Permalink to this headline"></a></h2>
+<p>A new version (0.5.4) of ODrive firmware has released, complete with a new odrivetool.
+Follow the installation instructions, making sure to add the <code class="code docutils literal notranslate"><span class="pre">--upgrade</span></code> flag to pip commands, and check out the <a class="reference external" href="https://github.com/odriverobotics/ODrive/blob/master/CHANGELOG.md">Changelog</a> for changes!</p>
+<p>The odrivetool will stage and restore your configuration.
+This probably isn’t wise for the 0.4.12 -&gt; 0.5.1 upgrade, so we suggest using <code class="code docutils literal notranslate"><span class="pre">odrv0.erase_configuration()</span></code> immediately after connecting the first time.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="odrivetool.html" class="btn btn-neutral float-right" title="odrivetool" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

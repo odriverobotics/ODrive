@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Modes &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Parameters &amp; Commands" href="commands.html" />
+    <link rel="prev" title="odrivetool" href="odrivetool.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#filtered-position-control">Filtered Position Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trajectory-control">Trajectory Control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#circular-position-control">Circular Position Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#velocity-control">Velocity Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramped-velocity-control">Ramped Velocity Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#torque-control">Torque Control</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Control Modes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/control-modes.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="control-modes">
+<span id="control-modes-doc"></span><h1>Control Modes<a class="headerlink" href="#control-modes" title="Permalink to this headline"></a></h1>
+<p>The default control mode is unfiltered position control in the absolute encoder reference frame.
+You may wish to use a controlled trajectory instead.
+Or you may wish to control position in a circular frame to allow continuous rotation forever without growing the numeric value of the setpoint too large.</p>
+<p>You may also wish to control velocity (directly or with a ramping filter).
+You can also directly control the current of the motor, which is proportional to torque.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#filtered-position-control" id="id4">Filtered Position Control</a></p></li>
+<li><p><a class="reference internal" href="#trajectory-control" id="id5">Trajectory Control</a></p></li>
+<li><p><a class="reference internal" href="#circular-position-control" id="id6">Circular Position Control</a></p></li>
+<li><p><a class="reference internal" href="#velocity-control" id="id7">Velocity Control</a></p></li>
+<li><p><a class="reference internal" href="#ramped-velocity-control" id="id8">Ramped Velocity Control</a></p></li>
+<li><p><a class="reference internal" href="#torque-control" id="id9">Torque Control</a></p></li>
+</ul>
+</div>
+<div class="section" id="filtered-position-control">
+<h2><a class="toc-backref" href="#id4">Filtered Position Control</a><a class="headerlink" href="#filtered-position-control" title="Permalink to this headline"></a></h2>
+<p>Asking the ODrive controller to go as hard as it can to raw setpoints may result in jerky movement.
+Even if you are using a planned trajectory generated from an external source, if that is sent at a modest frequency, the ODrive may chase each stair in the incoming staircase in a jerky way.
+In this case, a good starting point for tuning the filter bandwidth is to set it to one half of your setpoint command rate.</p>
+<p>You can use the second order position filter in these cases.
+Set the filter bandwidth [Hz]:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">axis</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">input_filter_bandwidth</span> <span class="o">=</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+<p>Activate the setpoint filter:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">axis</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">input_mode</span> <span class="o">=</span> <span class="n">INPUT_MODE_POS_FILTER</span>
+</pre></div>
+</div>
+<p>You can now control the position with</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">axis</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_pos</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<div class="figure align-default" id="id2">
+<img alt="secondOrderResponse" src="_images/secondOrderResponse.PNG" />
+<p class="caption"><span class="caption-text">Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 Hz</span><a class="headerlink" href="#id2" title="Permalink to this image"></a></p>
+</div>
+</div>
+<div class="section" id="trajectory-control">
+<h2><a class="toc-backref" href="#id5">Trajectory Control</a><a class="headerlink" href="#trajectory-control" title="Permalink to this headline"></a></h2>
+<p>See the <a class="reference internal" href="#usage"><span class="std std-ref">Usage</span></a> section for usage details.</p>
+<p>This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.</p>
+<div class="figure align-default" id="id3">
+<a class="reference internal image-reference" href="_images/TrapTrajPosVel.PNG"><img alt="TrapTrajPosVel" src="_images/TrapTrajPosVel.PNG" style="width: 445.90000000000003px; height: 288.6px;" /></a>
+<p class="caption"><span class="caption-text">Position (blue) and velocity (orange) vs. time using trajectory control.</span><a class="headerlink" href="#id3" title="Permalink to this image"></a></p>
+</div>
+<div class="section" id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">trap_traj</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_limit</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">trap_traj</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">accel_limit</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">trap_traj</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">decel_limit</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inertia</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">vel_limit</span></code> is the maximum planned trajectory speed.  This sets your coasting speed.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">accel_limit</span></code> is the maximum acceleration in turns / sec^2</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">decel_limit</span></code> is the maximum deceleration in turns / sec^2</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">controller.config.inertia</span></code> is a value which correlates acceleration (in turns / sec^2) and motor torque. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All values should be strictly positive (&gt;= 0).</p>
+</div>
+<p>Keep in mind that you must still set your safety limits as before.  It is recommended you set these a little higher ( &gt; 10%) than the planner values, to give the controller enough control authority.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">current_lim</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_limit</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<span id="id1"></span><h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h3>
+<p>Make sure you are in position control mode. To activate the trajectory module, set the input mode to trajectory:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">input_mode</span> <span class="o">=</span> <span class="n">INPUT_MODE_TRAP_TRAJ</span>
+</pre></div>
+</div>
+<p>Simply send a position command to execute the move:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_pos</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">Float</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Use the <code class="code docutils literal notranslate"><span class="pre">move_incremental</span></code> function to move to a relative position.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">move_incremental</span><span class="p">(</span><span class="n">pos_increment</span><span class="p">,</span> <span class="n">from_goal_point</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To set the goal relative to the current actual position, use <code class="code docutils literal notranslate"><span class="pre">from_goal_point</span> <span class="pre">=</span> <span class="pre">False</span></code>
+To set the goal relative to the previous destination, use <code class="code docutils literal notranslate"><span class="pre">from_goal_point</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+<p>You can also execute a move with the <a class="reference internal" href="ascii-protocol.html#motor-traj-cmd"><span class="std std-ref">appropriate ascii command</span></a>.</p>
+</div>
+</div>
+<div class="section" id="circular-position-control">
+<h2><a class="toc-backref" href="#id6">Circular Position Control</a><a class="headerlink" href="#circular-position-control" title="Permalink to this headline"></a></h2>
+<p>To enable Circular position control, set</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">circular_setpoints</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>This mode is useful for continuous incremental position movement.
+For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
+In the regular position mode, the <code class="code docutils literal notranslate"><span class="pre">input_pos</span></code> would grow to a very large value and would lose precision due to floating point rounding.</p>
+<p>In this mode, the controller will try to track the position within only one turn of the motor. Specifically, <code class="code docutils literal notranslate"><span class="pre">input_pos</span></code> is expected in the range <cite>[0, 1)</cite>.
+If the <code class="code docutils literal notranslate"><span class="pre">input_pos</span></code> is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+Note that in this mode <code class="code docutils literal notranslate"><span class="pre">encoder.pos_circular</span></code> is used for feedback instead of <code class="code docutils literal notranslate"><span class="pre">encoder.pos_estimate</span></code>.</p>
+<p>If you try to increment the axis with a large step in one go that exceeds <cite>1</cite> turn, the motor will go to the same angle around the wrong way.
+This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a larger circular range.
+Set</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">circular_setpoints_range</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">N</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Choose N to give you an appropriate circular space for your application.</p>
+</div>
+<div class="section" id="velocity-control">
+<h2><a class="toc-backref" href="#id7">Velocity Control</a><a class="headerlink" href="#velocity-control" title="Permalink to this headline"></a></h2>
+<p>Set the control mode</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">control_mode</span> <span class="o">=</span> <span class="n">CONTROL_MODE_VELOCITY_CONTROL</span>
+</pre></div>
+</div>
+<p>You can now control the velocity [turn/s] with</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_vel</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ramped-velocity-control">
+<h2><a class="toc-backref" href="#id8">Ramped Velocity Control</a><a class="headerlink" href="#ramped-velocity-control" title="Permalink to this headline"></a></h2>
+<p>Set the control mode</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">control_mode</span> <span class="o">=</span> <span class="n">CONTROL_MODE_VELOCITY_CONTROL</span>
+</pre></div>
+</div>
+<p>Set the velocity ramp rate (acceleration in turn/s^2):</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_ramp_rate</span> <span class="o">=</span> <span class="mf">0.5</span>
+</pre></div>
+</div>
+<p>Activate the ramped velocity mode:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">input_mode</span> <span class="o">=</span> <span class="n">INPUT_MODE_VEL_RAMP</span>
+</pre></div>
+</div>
+<p>You can now control the velocity (turn/s) with</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_vel</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="torque-control">
+<h2><a class="toc-backref" href="#id9">Torque Control</a><a class="headerlink" href="#torque-control" title="Permalink to this headline"></a></h2>
+<p>Set the control mode</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">control_mode</span> <span class="o">=</span> <span class="n">CONTROL_MODE_TORQUE_CONTROL</span>
+</pre></div>
+</div>
+<p>You can now control the torque (Nm) with</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_torque</span> <span class="o">=</span> <span class="mf">0.1</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you exceed <code class="code docutils literal notranslate"><span class="pre">vel_limit</span></code> in torque control mode, the current is reduced.
+To disable this, set</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">enable_torque_mode_vel_limit</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="odrivetool.html" class="btn btn-neutral float-left" title="odrivetool" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="commands.html" class="btn btn-neutral float-right" title="Parameters &amp; Commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parameters &amp; Commands &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Encoders" href="encoders.html" />
+    <link rel="prev" title="Control Modes" href="control-modes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parameters &amp; Commands</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#per-axis-commands">Per-Axis Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#state-machine">State Machine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#startup-procedure">Startup Procedure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#control-mode">Control Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#input-mode">Input Mode</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#control-commands">Control Commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#system-monitoring-commands">System Monitoring Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#encoder-position-and-velocity">Encoder Position and Velocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#motor-current-and-torque-estimation">Motor Current and Torque Estimation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#general-system-commands">General System Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#saving-the-configuration">Saving the Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-sensorless">Setting up Sensorless</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Parameters &amp; Commands</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/commands.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="parameters-commands">
+<span id="commands-doc"></span><h1>Parameters &amp; Commands<a class="headerlink" href="#parameters-commands" title="Permalink to this headline"></a></h1>
+<p>We will use the <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;</span></code> as a placeholder for any ODrive object. Every ODrive controller is an ODrive object. In <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> this is usually <code class="code docutils literal notranslate"><span class="pre">odrv0</span></code>. Furthermore we use <cite>&lt;axis&gt;</cite> as a placeholder for any axis, which is an attribute of an ODrive object (for example <cite>odrv0.axis0</cite>). An axis represents where the motors are connected. (axis0 for M0 or axis1 for M1)</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#per-axis-commands" id="id1">Per-Axis Commands</a></p></li>
+<li><p><a class="reference internal" href="#system-monitoring-commands" id="id2">System Monitoring Commands</a></p></li>
+<li><p><a class="reference internal" href="#general-system-commands" id="id3">General System Commands</a></p></li>
+<li><p><a class="reference internal" href="#setting-up-sensorless" id="id4">Setting up Sensorless</a></p></li>
+</ul>
+</div>
+<div class="section" id="per-axis-commands">
+<h2><a class="toc-backref" href="#id1">Per-Axis Commands</a><a class="headerlink" href="#per-axis-commands" title="Permalink to this headline"></a></h2>
+<p>For the most part, both axes on the ODrive can be controlled independently.</p>
+<div class="section" id="state-machine">
+<h3>State Machine<a class="headerlink" href="#state-machine" title="Permalink to this headline"></a></h3>
+<p>The current state of an axis is indicated by <code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.current_state</span></code>.
+The user can request a new state by assigning a new value to <code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.requested_state</span></code>.
+The default state after startup is <code class="code docutils literal notranslate"><span class="pre">AXIS_STATE_IDLE</span></code>. A description of all states can be found <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+</div>
+<div class="section" id="startup-procedure">
+<span id="commands-startup-procedure"></span><h3>Startup Procedure<a class="headerlink" href="#startup-procedure" title="Permalink to this headline"></a></h3>
+<p>By default the ODrive takes no action at startup and goes to idle immediately.
+In order to change what startup procedures are used, set the startup procedures you want to <cite>True</cite>.
+The ODrive will sequence all enabled startup actions selected in the order shown below.</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_motor_calibration</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_encoder_index_search</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_encoder_offset_calibration</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_closed_loop_control</span></code></p></li>
+</ul>
+<p>See <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code> for a description of each state.</p>
+</div>
+<div class="section" id="control-mode">
+<h3>Control Mode<a class="headerlink" href="#control-mode" title="Permalink to this headline"></a></h3>
+<p>The default control mode is position control.
+If you want a different mode, you can change <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.config.control_mode</span></code>.
+Possible values are listed <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+</div>
+<div class="section" id="input-mode">
+<h3>Input Mode<a class="headerlink" href="#input-mode" title="Permalink to this headline"></a></h3>
+<p>As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them.
+The old protocol values <code class="code docutils literal notranslate"><span class="pre">pos_setpoint</span></code>, <code class="code docutils literal notranslate"><span class="pre">vel_setpoint</span></code>, and <cite>current_setpoint</cite> are still used internally by the closed-loop cascade control, but the user cannot write to them directly.
+This allows us to condense the number of ways the ODrive accepts motion commands.</p>
+<div class="section" id="control-commands">
+<h4>Control Commands<a class="headerlink" href="#control-commands" title="Permalink to this headline"></a></h4>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.input_pos</span> <span class="pre">=</span> <span class="pre">&lt;turn&gt;</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.input_vel</span> <span class="pre">=</span> <span class="pre">&lt;turn/s&gt;</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.input_torque</span> <span class="pre">=</span> <span class="pre">&lt;torque</span> <span class="pre">in</span> <span class="pre">Nm&gt;</span></code></p></li>
+</ul>
+<p>Modes can be selected by changing <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.config.input_mode</span></code>.
+The default input mode is <code class="code docutils literal notranslate"><span class="pre">INPUT_MODE_PASSTHROUGH</span></code>.
+Possible values are listed <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="system-monitoring-commands">
+<h2><a class="toc-backref" href="#id2">System Monitoring Commands</a><a class="headerlink" href="#system-monitoring-commands" title="Permalink to this headline"></a></h2>
+<div class="section" id="encoder-position-and-velocity">
+<h3>Encoder Position and Velocity<a class="headerlink" href="#encoder-position-and-velocity" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>View encoder position with <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.pos_estimate</span></code> [turns] or <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.pos_est_counts</span></code> [counts]</p></li>
+<li><p>View rotational velocity with <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.vel_estimate</span></code> [turn/s] or <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.vel_est_counts</span></code> [count/s]</p></li>
+</ul>
+</div>
+<div class="section" id="motor-current-and-torque-estimation">
+<h3>Motor Current and Torque Estimation<a class="headerlink" href="#motor-current-and-torque-estimation" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>View the commanded motor current with <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.Iq_setpoint</span></code> [A]</p></li>
+<li><p>View the measured motor current with <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.Iq_measured</span></code> [A].
+If you find that this returns noisy data then use the command motor current instead.
+The two values should be close so long as you are not approaching the maximum achievable rotational velocity of your motor for a given supply voltage, in which case the commanded current may become larger than the measured current.</p></li>
+</ul>
+<p>Using the motor current and the known KV of your motor you can estimate the motors torque using the following relationship: Torque [N.m] = 8.27 * Current [A] / KV.</p>
+</div>
+</div>
+<div class="section" id="general-system-commands">
+<h2><a class="toc-backref" href="#id3">General System Commands</a><a class="headerlink" href="#general-system-commands" title="Permalink to this headline"></a></h2>
+<div class="section" id="saving-the-configuration">
+<h3>Saving the Configuration<a class="headerlink" href="#saving-the-configuration" title="Permalink to this headline"></a></h3>
+<p>All variables that are part of a <code class="code docutils literal notranslate"><span class="pre">[...].config</span></code> object can be saved to non-volatile memory on the ODrive so they persist after you remove power.
+The relevant commands are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.save_configuration()</span></code>: Stores the configuration to persistent memory on the ODrive.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.erase_configuration()</span></code>: Resets the configuration variables to their factory defaults. This also reboots the device.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="diagnostics">
+<h3>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.serial_number</span></code>: A number that uniquely identifies your device. When printed in upper case hexadecimal (<code class="code docutils literal notranslate"><span class="pre">hex(&lt;odrv&gt;.serial_number).upper()</span></code>), this is identical to the serial number indicated by the USB descriptor.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.fw_version_major</span></code>, <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.fw_version_minor</span></code>, <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.fw_version_revision</span></code>: The firmware version that is currently running.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.hw_version_major</span></code>, <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.hw_version_minor</span></code>, <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.hw_version_revision</span></code>: The hardware version of your ODrive.</p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="setting-up-sensorless">
+<span id="sensorless-setup"></span><h2><a class="toc-backref" href="#id4">Setting up Sensorless</a><a class="headerlink" href="#setting-up-sensorless" title="Permalink to this headline"></a></h2>
+<p>The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hundred RPM.
+In other words, sensorless mode does not support stopping or changing direction!</p>
+<p>Sensorless mode starts by ramping up the motor speed in open loop control and then switches to closed loop control automatically.
+The sensorless speed ramping parameters are in <code class="code docutils literal notranslate"><span class="pre">axis.config.sensorless_ramp</span></code>.
+The <code class="code docutils literal notranslate"><span class="pre">vel</span></code> and <code class="code docutils literal notranslate"><span class="pre">accel</span></code> (in [radians/s] and [radians/s^2]) parameters control the speed that the ramp tries to reach and how quickly it gets there.
+When the ramp reaches <code class="code docutils literal notranslate"><span class="pre">sensorless_ramp.vel</span></code>, <code class="code docutils literal notranslate"><span class="pre">controller.input_vel</span></code> is automatically set to the same velocity, in [turns/s], and the state switches to closed loop control.</p>
+<p>If your motor comes to a stop after the ramp, try incrementally raising the <code class="code docutils literal notranslate"><span class="pre">vel</span></code> parameter.
+The goal is to be above the minimum speed necessary for sensorless position and speed feedback to converge - this is not well-parameterized per motor.
+The parameters suggested below work for the D5065 motor, with 270KV and 7 pole pairs.
+If your motor grinds and skips during the ramp, lower the <code class="code docutils literal notranslate"><span class="pre">accel</span></code> parameter until it is tolerable.</p>
+<p>Below are some suggested starting parameters that you can use for the ODrive D5065 motor.
+Note that you <strong>must</strong> set the <code class="code docutils literal notranslate"><span class="pre">pm_flux_linkage</span></code> correctly for sensorless mode to work.
+Motor calibration and setup must also be completed before sensorless mode will work.</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_gain</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_integrator_gain</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">control_mode</span> <span class="o">=</span> <span class="n">CONTROL_MODE_VELOCITY_CONTROL</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_limit</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">value</span> <span class="n">greater</span> <span class="n">than</span> <span class="n">axis</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">sensorless_ramp</span><span class="o">.</span><span class="n">vel</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="n">pi</span> <span class="o">*</span> <span class="o">&lt;</span><span class="n">pole_pairs</span><span class="o">&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">current_lim</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">sensorless_ramp</span><span class="o">.</span><span class="n">current</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">sensorless_estimator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pm_flux_linkage</span> <span class="o">=</span> <span class="mf">5.51328895422</span> <span class="o">/</span> <span class="p">(</span><span class="o">&lt;</span><span class="n">pole</span> <span class="n">pairs</span><span class="o">&gt;</span> <span class="o">*</span> <span class="o">&lt;</span><span class="n">motor</span> <span class="n">kv</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_sensorless_mode</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>To start the motor:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">requested_state</span> <span class="o">=</span> <span class="n">AXIS_STATE_CLOSED_LOOP_CONTROL</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="control-modes.html" class="btn btn-neutral float-left" title="Control Modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="encoders.html" class="btn btn-neutral float-right" title="Encoders" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

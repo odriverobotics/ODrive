@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ground Loops &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Hoverboard motor and remote control setup guide" href="hoverboard.html" />
+    <link rel="prev" title="Specifications" href="specifications.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Ground Loops</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-problem">The Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#solutions">Solutions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#reduce-power-wire">Reduce Power Wire</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#isolation">Isolation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#current-limiting">Current Limiting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Ground Loops</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ground-loops.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="ground-loops">
+<span id="id1"></span><h1>Ground Loops<a class="headerlink" href="#ground-loops" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#the-problem" id="id2">The Problem</a></p></li>
+<li><p><a class="reference internal" href="#solutions" id="id3">Solutions</a></p></li>
+</ul>
+</div>
+<p>For electrical devices to communicate, most of the time they require a common ground connection.
+Best practice is to connect the grounds back to a single point, called a “star ground”.
+If there are multiple paths to ground, a “ground loop” is formed.
+Ground loops and wire inductance can cause issues for high current electronics like ODrive.
+As an example of what can go wrong, look at the diagram below.</p>
+<div class="section" id="the-problem">
+<h2><a class="toc-backref" href="#id2">The Problem</a><a class="headerlink" href="#the-problem" title="Permalink to this headline"></a></h2>
+<a class="reference internal image-reference" href="_images/ground_loop_bad.png"><img alt="Ground Loop with inductance" class="align-center" src="_images/ground_loop_bad.png" style="width: 768.0px; height: 320.0px;" /></a>
+<p>The issue is the inductance of the power wires between the ODrive and power supply.
+The inductance and the high current drawn by the ODrive causes V_1 to not be the same as V_2.
+If the voltage caused by the wire inductance and current is high enough, the 0-5V gpio signals can swing much higher or lower than the normal 0-5V range.
+This causes a current to flow through the ODrive GPIO pins.</p>
+</div>
+<div class="section" id="solutions">
+<h2><a class="toc-backref" href="#id3">Solutions</a><a class="headerlink" href="#solutions" title="Permalink to this headline"></a></h2>
+<div class="section" id="reduce-power-wire">
+<h3>Reduce Power Wire<a class="headerlink" href="#reduce-power-wire" title="Permalink to this headline"></a></h3>
+<p>All wires have some amount of inductance. The inductance is proportional to the length of the wires and the area of the loop formed by the positive and negative power wires.
+It is beneficial to keep those wires as short as possible and as close together as possible. This reduces the effect of the problem but does not eliminate it!</p>
+</div>
+<div class="section" id="isolation">
+<h3>Isolation<a class="headerlink" href="#isolation" title="Permalink to this headline"></a></h3>
+<p>To fix this, the ground loop must be broken. This can be achieved by isolating the power supplies (no common V-) and connecting a signal ground between the RPi and ODrive.
+An example of this is a single ODrive connected to a battery and a device like a RPi connected to a mains power supply or different battery.
+If more than one ODrive is in use and they share a power supply, you have a ground loop again.</p>
+<p>The best way to fix this is to isolate the data connection between the RPi and ODrive(s). The diagram below illustrates where the isolator should go.</p>
+<a class="reference internal image-reference" href="_images/ground_loop_fix.png"><img alt="Ground Loop fixed by isolator" class="align-center" src="_images/ground_loop_fix.png" style="width: 768.0px; height: 324.0px;" /></a>
+<p>By isolating the data connection (whether it is GPIO, USB, or UART), the ground loop is broken.
+Isolation can be achieved by using a USB isolator or a signal isolator for GPIO connections.</p>
+<p>Here are some examples of USB isolators:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.aliexpress.com/item/33016336073.html?spm=a2g0s.9042311.0.0.57ec4c4dDADzZo">Isolator 1</a></p></li>
+<li><p><a class="reference external" href="https://www.aliexpress.com/item/4000060726013.html?spm=a2g0s.9042311.0.0.57ec4c4dDADzZo">Isolator 2</a></p></li>
+</ul>
+<p>These are generic devices. If Aliexpress is not an option for you, you can probably find them available in your area from a different vendor.
+In the US, these types of isolators are available from Amazon and Ebay.</p>
+<p>For GPIO connections, like UART, Step/dir, PWM, etc, you can use signal isolators like the ISO7762F from Texas Instruments.
+Keep in mind that isolators have a speed limit. Devices like optocouplers might be too slow for UART connections or Step/direction.
+Check the datasheet!</p>
+</div>
+<div class="section" id="current-limiting">
+<h3>Current Limiting<a class="headerlink" href="#current-limiting" title="Permalink to this headline"></a></h3>
+<p>If isolators are not an option, you can use series resistors to limit the injection current to a safe level. Place a resistor on the recieving side of all connections to or from the ODrive GPIO pins.
+4.7kOhms is a good value, but anything from 3.3kOhms to 10kOhms should work. Series resistors offer some protection for the ODrive, but the ground loop problem can still cause the GPIOs to be pulled high or low for short periods of time.
+The ODrive and your other device will most likely be safe but communications might be interrupted.</p>
+<p>As an example, for UART, you would place a resistor close to the RX pin of the ODrive and another one close to the RX pin of the other device (like an Arduino).
+This allows the driving side, the TX pins, to adequately drive the bus capacitance.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="specifications.html" class="btn btn-neutral float-left" title="Specifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hoverboard.html" class="btn btn-neutral float-right" title="Hoverboard motor and remote control setup guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

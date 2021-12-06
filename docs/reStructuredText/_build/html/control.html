@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Structure and Tuning &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Troubleshooting" href="troubleshooting.html" />
+    <link rel="prev" title="Encoders" href="encoders.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Structure and Tuning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#position-control-loop">Position Control Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#velocity-control-loop">Velocity Control Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#current-control-loop">Current Control Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#controller-details">Controller Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tuning">Tuning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Control Structure and Tuning</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/control.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="control-structure-and-tuning">
+<span id="control-doc"></span><h1>Control Structure and Tuning<a class="headerlink" href="#control-structure-and-tuning" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#position-control-loop" id="id2">Position Control Loop</a></p></li>
+<li><p><a class="reference internal" href="#velocity-control-loop" id="id3">Velocity Control Loop</a></p></li>
+<li><p><a class="reference internal" href="#current-control-loop" id="id4">Current Control Loop</a></p></li>
+<li><p><a class="reference internal" href="#controller-details" id="id5">Controller Details</a></p></li>
+<li><p><a class="reference internal" href="#tuning" id="id6">Tuning</a></p></li>
+</ul>
+</div>
+<p>The motor controller is a cascaded style position, velocity and current control loop, as per the diagram below.
+When the control mode is set to position control, the whole loop runs.
+When running in velocity control mode, the position control part is removed and the velocity command is fed directly in to the second stage input.
+In torque control mode, only the current controller is used.</p>
+<div class="figure align-default" id="id1">
+<img alt="controller_with_ff" src="_images/controller_with_ff.png" />
+<p class="caption"><span class="caption-text">Cascaded position and velocity I loops</span><a class="headerlink" href="#id1" title="Permalink to this image"></a></p>
+</div>
+<p>Each stage of the control loop is a variation on a <a class="reference external" href="https://en.wikipedia.org/wiki/PID_controller">PID controller</a>.
+A PID controller is a mathematical model that can be adapted to control a wide variety of systems.
+This flexibility is essential as it allows the ODrive to be used to control all kinds of mechanical systems.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The controller has been updated to use <cite>torque</cite> in Newton-meters instead of current at the “system” level.
+There is a <code class="code docutils literal notranslate"><span class="pre">torque_constant</span></code> parameter which converts between torque and current, after which the rest of this explanation still holds.</p>
+</div>
+<div class="section" id="position-control-loop">
+<h2><a class="toc-backref" href="#id2">Position Control Loop</a><a class="headerlink" href="#position-control-loop" title="Permalink to this headline"></a></h2>
+<p>The position controller is a P loop with a single proportional gain,</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\text{pos_error} &amp;= \text{pos_setpoint} - \text{pos_feedback},\\\text{vel_cmd} &amp;= \text{pos_error} * \text{pos_gain} + \text{vel_feedforward}.\end{aligned}\end{align} \]</div>
+</div></blockquote>
+</div>
+<div class="section" id="velocity-control-loop">
+<h2><a class="toc-backref" href="#id3">Velocity Control Loop</a><a class="headerlink" href="#velocity-control-loop" title="Permalink to this headline"></a></h2>
+<p>The velocity controller is a PI loop where</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\text{vel_error} &amp;= \text{vel_cmd} - \text{vel_feedback},\\\text{current_integral} &amp;+= \text{vel_error} * \text{vel_integrator gain},\\\text{current_cmd} &amp;= \text{vel_error} * \text{vel_gain} + \text{current_integral} + \text{current_feedforward}.\end{aligned}\end{align} \]</div>
+</div></blockquote>
+</div>
+<div class="section" id="current-control-loop">
+<h2><a class="toc-backref" href="#id4">Current Control Loop</a><a class="headerlink" href="#current-control-loop" title="Permalink to this headline"></a></h2>
+<p>The current controller is also a PI loop,</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\text{current_error} &amp;= \text{current_cmd} - \text{current_feedback},\\\text{voltage_integral} &amp;+= \text{current_error} * \text{current_integrator gain},\\\text{voltage_cmd} &amp;= \text{current_error} * \text{current_gain} + \text{voltage_integral} + ...\\&amp; ... + \text{voltage_feedforward} \textbf{  (when we have motor model)}.\end{aligned}\end{align} \]</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>current_gain</cite> and <cite>current_integrator_gain</cite> are automatically set according to <code class="code docutils literal notranslate"><span class="pre">motor.config.current_control_bandwidth</span></code></p>
+</div>
+<p>For more detail refer to <a class="reference external" href="https://github.com/madcowswe/ODrive/blob/master/Firmware/MotorControl/controller.cpp#L86">controller.cpp</a>.</p>
+</div>
+<div class="section" id="controller-details">
+<h2><a class="toc-backref" href="#id5">Controller Details</a><a class="headerlink" href="#controller-details" title="Permalink to this headline"></a></h2>
+<p>The ultimate output of the controller is the voltage applied to the gate of each FET to deliver current through each coil of the motor.
+The current through the motor linearly relates to the torque output of the motor.
+This means that the inputs to the cascaded controller are theoretically the position (angle), velocity (angle/time), and acceleration (angle/time/time) of the motor.
+Note that when thinking about the controller from the perpective of the physics of the motor you would expect to see the time in the Velocity and Current loops, but it is absent because the time difference between iterations is always 125 microseconds (8kHz).
+Because the time difference between controller loops is a constant and can simply be wrapped into the controller gains.</p>
+<p>The output of each stage of the controller is clamped before being fed into the next stage.
+So after the <cite>vel_cmd</cite> is calculated from the position controller, the <cite>vel_cmd</cite> is clamped to the velocity limit.
+The <cite>torque_cmd</cite> output of the velocity controller is then clamped and fed to the current controller.
+Oddly enough the controller class does not contain the current controller, but instead the current controller is housed in the motor class due to the complexity of the motor driver schema.</p>
+<p>The feedforward terms available when using the position or velocity control mode are meant to enable better performance when the dynamics of a system are known and the host controller can predict the motion based on the load.
+A perfect example of this is the use of the trajectory controller that sets the position, velocity, and torque based on the desired position, velocity, and acceleration.
+If you take a trapezoidal velocity profile for example, you can imagine on the ramp upward the velocity will be increasing over time, while the torque is a non-zero constant.
+At the flat portion of the profile the velocity will be a non-zero constant, but the acceleration will be zero.
+This trajectory controller use case uses the cascaded controller with multiple inputs to achieve the desired motion with the best performance.</p>
+</div>
+<div class="section" id="tuning">
+<span id="control-tuning"></span><h2><a class="toc-backref" href="#id6">Tuning</a><a class="headerlink" href="#tuning" title="Permalink to this headline"></a></h2>
+<p>Tuning the motor controller is an essential step to unlock the full potential of the ODrive.
+Tuning allows for the controller to quickly respond to disturbances or changes in the system (such as an external force being applied or a change in the setpoint) without becoming unstable.
+Correctly setting the three tuning parameters (called gains) ensures that ODrive can control your motors in the most effective way possible.
+The three (starting) values are:</p>
+<ul>
+<li><p>pos_gain [(turn/s) / turn]:</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pos_gain</span> <span class="o">=</span> <span class="mf">20.0</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>vel_gain [Nm/(turn/s)]:</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">..</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_gain</span> <span class="o">=</span> <span class="mf">0.16</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>vel_integrator_gain [Nm/((turn/s) * s)]:</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vel_integrator_gain</span> <span class="o">=</span> <span class="mf">0.32</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+<dl>
+<dt>An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:</dt><dd><ol class="arabic">
+<li><p>Set vel_integrator_gain gain to 0</p></li>
+<li><p>Make sure you have a stable system. If it is not, decrease all gains until you have one.</p></li>
+<li><p>Increase <code class="code docutils literal notranslate"><span class="pre">vel_gain</span></code> by around 30% per iteration until the motor exhibits some vibration.</p></li>
+<li><p>Back down <code class="code docutils literal notranslate"><span class="pre">vel_gain</span></code> to 50% of the vibrating value.</p></li>
+<li><p>Increase <code class="code docutils literal notranslate"><span class="pre">pos_gain</span></code> by around 30% per iteration until you see some overshoot.</p></li>
+<li><p>Back down <code class="code docutils literal notranslate"><span class="pre">pos_gain</span></code> until you do not have overshoot anymore.</p></li>
+<li><p>The integrator can be set to <code class="code docutils literal notranslate"><span class="pre">0.5</span> <span class="pre">*</span> <span class="pre">bandwidth</span> <span class="pre">*</span> <span class="pre">vel_gain</span></code>, where <code class="code docutils literal notranslate"><span class="pre">bandwidth</span></code> is the overall resulting tracking bandwidth of your system.
+Say your tuning made it track commands with a settling time of 100ms (the time from when the setpoint changes to when the system arrives at the new setpoint); this means the bandwidth was <span class="math notranslate nohighlight">\(\frac{1}{100ms} = \frac{1}{0.1s} = 10Hz\)</span>.
+In this case you should set</p>
+<blockquote>
+<div><div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">vel_integrator_gain</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="o">&lt;</span><span class="n">vel_gain</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
+<p>The liveplotter tool can be immensely helpful in dialing in these values.
+To display a graph that plots the position setpoint vs the measured position value run the following in the ODrive tool:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">start_liveplotter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:[</span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">pos_estimate</span><span class="p">,</span> <span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">pos_setpoint</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="encoders.html" class="btn btn-neutral float-left" title="Encoders" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troubleshooting.html" class="btn btn-neutral float-right" title="Troubleshooting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

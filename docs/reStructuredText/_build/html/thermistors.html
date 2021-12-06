@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thermistors &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ODrive Reference" href="fibre_types/com_odriverobotics_ODrive.html" />
+    <link rel="prev" title="Endstops and Homing" href="endstops.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Thermistors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fet-thermistor">FET Thermistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#connecting-motor-thermistors">Connecting Motor Thermistors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#voltage-divider-circuit">Voltage Divider Circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#thermistor-coefficients">Thermistor Coefficients</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Thermistors</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/thermistors.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="thermistors">
+<span id="thermistor-doc"></span><h1>Thermistors<a class="headerlink" href="#thermistors" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id2">Introduction</a></p></li>
+<li><p><a class="reference internal" href="#fet-thermistor" id="id3">FET Thermistor</a></p></li>
+<li><p><a class="reference internal" href="#connecting-motor-thermistors" id="id4">Connecting Motor Thermistors</a></p></li>
+<li><p><a class="reference internal" href="#voltage-divider-circuit" id="id5">Voltage Divider Circuit</a></p></li>
+<li><p><a class="reference internal" href="#thermistor-coefficients" id="id6">Thermistor Coefficients</a></p></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h2>
+<p>Thermistors are elements that change their resistance based on the temperature.
+They can be used to electrically measure temperature.
+The ODrive itself has thermistors on board near the FETs to ensure that they don’t burn themselves out.
+In addition to this it’s possible to connect your own thermistor to measure the temperature of the connected motors.
+There are two types of thermistors, Negative Temperature Coefficient (NTC) and Positive Temperature Coefficient (PTC).
+This indicates whether the resistance goes up or down when the temperature goes up or down.
+The ODrive only supports the NTC type thermistor.</p>
+</div>
+<div class="section" id="fet-thermistor">
+<h2><a class="toc-backref" href="#id3">FET Thermistor</a><a class="headerlink" href="#fet-thermistor" title="Permalink to this headline"></a></h2>
+<p>The temperature of the onboard FET thermistors can be read out by using the <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> under <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.fet_thermistor.temperature</span></code>.
+The odrive will automatically start current limiting the motor when the <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.fet_thermistor.config.temp_limit_lower</span></code> threshold is exceeded and once <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.fet_thermistor.config.temp_limit_upper</span></code> is exceeded the ODrive will stop controlling the motor and set an error.
+The lower and upper threshold can be changed, but this is not recommended.</p>
+</div>
+<div class="section" id="connecting-motor-thermistors">
+<h2><a class="toc-backref" href="#id4">Connecting Motor Thermistors</a><a class="headerlink" href="#connecting-motor-thermistors" title="Permalink to this headline"></a></h2>
+<p>To use your own thermistors with the ODrive a few things have to be clarified first.
+The use of your own thermistor requires one analog input pin. Under <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.motor_thermistor.config</span></code> the configuration of your own thermistor is available with the following fields:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">gpio_pin</span></code>: The GPIO input in used for this thermistor.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">poly_coefficient_0</span></code> to <code class="code docutils literal notranslate"><span class="pre">poly_coefficient_3</span></code>: Coefficient that needs to be set for your specific setup more on that in <a class="reference internal" href="#thermistor-coefficients"><span class="std std-ref">Thermistor coefficients</span></a>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">temp_limit_lower</span></code> and <code class="code docutils literal notranslate"><span class="pre">temp_limit_upper</span></code>: Same principle as the FET temperature limits.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">enabled</span></code>: Whether this thermistor is enabled or not.</p></li>
+</ul>
+</div>
+<div class="section" id="voltage-divider-circuit">
+<h2><a class="toc-backref" href="#id5">Voltage Divider Circuit</a><a class="headerlink" href="#voltage-divider-circuit" title="Permalink to this headline"></a></h2>
+<p>To measure a temperature with a thermistor a voltage divider circuit is used in addition with an ADC.
+The screenshot below is taken directly from the ODrive schematic.</p>
+<div class="figure align-default">
+<a class="reference internal image-reference" href="_images/thermistor-voltage-divider.png"><img alt="Thermistor voltage divider" src="_images/thermistor-voltage-divider.png" style="width: 206.0px; height: 216.0px;" /></a>
+</div>
+<p>The way this works is that the thermistor is connected in series with a known resistance value.
+By connecting an ADC directly after the thermistor the resistance value can be determined.
+For further information see <a class="reference external" href="https://en.wikipedia.org/wiki/Voltage_divider">Voltage divider</a>.
+While not strictly necessary, it is a good idea to add a capacitor as shown as well. This will help reduce the effect of electrical noise.
+A value between 470nF and 4.7uF is recommended, and any voltage rating 4V or higher. Put the capacitor physically close to the ODrive.
+To use a thermistor with the ODrive a voltage divider circuit has to be made that uses <cite>VCCA</cite> as the power source with <cite>GNDA</cite> as the ground.
+The voltage divider output can be connected to a GPIO pin that supports analog input.</p>
+</div>
+<div class="section" id="thermistor-coefficients">
+<span id="id1"></span><h2><a class="toc-backref" href="#id6">Thermistor Coefficients</a><a class="headerlink" href="#thermistor-coefficients" title="Permalink to this headline"></a></h2>
+<p>Every thermistor and voltage divider circuit is different and thus it’s necessary to let the ODrive know how to relate a voltage it measures at the GPIO pin to a temperature.
+The <code class="code docutils literal notranslate"><span class="pre">poly_coefficient_0</span></code> to <code class="code docutils literal notranslate"><span class="pre">poly_coefficient_3</span></code> under <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.motor_thermistor.config</span></code> are used for this.
+The <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> has a convenience function <code class="code docutils literal notranslate"><span class="pre">set_motor_thermistor_coeffs(axis,</span> <span class="pre">Rload,</span> <span class="pre">R_25,</span> <span class="pre">Beta,</span> <span class="pre">Tmin,</span> <span class="pre">Tmax)</span></code> which can be used to calculate and set these coefficients.</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">axis</span></code>: Which axis do set the motor thermistor coefficients for (<code class="code docutils literal notranslate"><span class="pre">odrv0.axis0</span></code> or <code class="code docutils literal notranslate"><span class="pre">odrv0.axis1</span></code>).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Rload</span></code>: The Ohm value of the resistor used in the voltage divider circuit.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">R_25</span></code>: The resistance of the thermistor when the temperature is 25 degrees celsius. Can usually be found in the datasheet of your thermistor. Can also be measured manually with a multimeter.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Beta</span></code>: A constant specific to your thermistor. Can be found in the datasheet of your thermistor.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Tmin</span></code> and <code class="code docutils literal notranslate"><span class="pre">Tmax</span></code>: The temperature range that is used to create the coefficients. Make sure to set this range to be wider than what is expected during operation. A good example may be -10 to 150.</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="endstops.html" class="btn btn-neutral float-left" title="Endstops and Homing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fibre_types/com_odriverobotics_ODrive.html" class="btn btn-neutral float-right" title="ODrive Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

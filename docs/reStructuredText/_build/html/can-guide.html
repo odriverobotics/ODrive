@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAN Bus Guide for ODrive &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ODrive Communication Protocol" href="protocol.html" />
+    <link rel="prev" title="Migration Guide" href="migration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CAN Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-can-bus">What is CAN bus?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-use-can">Why use CAN?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-setup">Hardware Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-can-on-odrive">Setting up CAN on ODrive</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-raspberry-pi-for-can-communications">Setting up a Raspberry Pi for CAN Communications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wiring-odrive-to-can">Wiring ODrive to CAN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verifying-communcation">Verifying Communcation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#commanding-the-odrive">Commanding the ODrive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dbc-files">DBC Files</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>CAN Bus Guide for ODrive</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/can-guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="can-bus-guide-for-odrive">
+<span id="can-guide"></span><h1>CAN Bus Guide for ODrive<a class="headerlink" href="#can-bus-guide-for-odrive" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#what-is-can-bus" id="id1">What is CAN bus?</a></p></li>
+<li><p><a class="reference internal" href="#why-use-can" id="id2">Why use CAN?</a></p></li>
+<li><p><a class="reference internal" href="#hardware-setup" id="id3">Hardware Setup</a></p></li>
+<li><p><a class="reference internal" href="#setting-up-can-on-odrive" id="id4">Setting up CAN on ODrive</a></p></li>
+<li><p><a class="reference internal" href="#setting-up-a-raspberry-pi-for-can-communications" id="id5">Setting up a Raspberry Pi for CAN Communications</a></p></li>
+<li><p><a class="reference internal" href="#commanding-the-odrive" id="id6">Commanding the ODrive</a></p></li>
+<li><p><a class="reference internal" href="#dbc-files" id="id7">DBC Files</a></p></li>
+</ul>
+</div>
+<p>ODrive v3 supports CAN 2.0b. We’ve built a <a class="reference internal" href="can-protocol.html#can-protocol"><span class="std std-ref">simple protocol</span></a> (named CANSimple) so that most ODrive functions can be controlled without a full CAN Open or similar stack.
+This guide is intended for beginners to set up CAN on the ODrive and on their host device.
+We will be focusing on Raspberry Pi and Arduino-compatible devices using the MCP2515 CAN Controller.</p>
+<div class="section" id="what-is-can-bus">
+<h2><a class="toc-backref" href="#id1">What is CAN bus?</a><a class="headerlink" href="#what-is-can-bus" title="Permalink to this headline"></a></h2>
+<p>Borrowing from <a class="reference external" href="https://en.wikipedia.org/wiki/CAN_bus">Wikipeda</a>:</p>
+<p>&gt; A Controller Area Network (CAN bus) is a robust vehicle bus standard designed to allow microcontrollers and devices to communicate with each other’s applications without a host computer.
+It is a message-based protocol, designed originally for multiplex electrical wiring within automobiles to save on copper, but it can also be used in many other contexts.
+For each device, the data in a frame is transmitted sequentially but in such a way that if more than one device transmits at the same time, the highest priority device can continue while the others back off.
+Frames are received by all devices, including by the transmitting device.</p>
+<p>In simple terms, CAN is a way of communicating between many devices over a single twisted pair of wires.
+The signal is transmitted as the difference in voltage between the two wires (differential signalling), which makes it very robust against noise.
+Instead of using a unique address (like I2C) or a select pin (like SPI), CAN <em>messages</em> have a unique ID that also acts as the priority.
+At the beginning of a message frame, all devices talk and read at the same time.  As the message ID is transmitted, the lowest value “wins” and that message will be transmitted (ID <strong>0</strong> has the <em>highest</em> priority).
+All other devices will wait for the next chance to send.  If two devices send the same message ID at the same time, they will conflict and a bus failure may occur.
+Make sure your devices can never send the same message ID at the same time!</p>
+<p>See also <a class="reference external" href="https://danfosseditron.zendesk.com/hc/en-gb/articles/360042232992-CAN-bus-physical-layer">this great article</a> from Danfoss that quickly describes how to put together the wiring for a CAN bus</p>
+<a class="reference internal image-reference" href="_images/CAN_Bus_Drawing.png"><img alt="CAN picture" class="align-center" src="_images/CAN_Bus_Drawing.png" style="width: 626.4px; height: 277.2px;" /></a>
+</div>
+<div class="section" id="why-use-can">
+<h2><a class="toc-backref" href="#id2">Why use CAN?</a><a class="headerlink" href="#why-use-can" title="Permalink to this headline"></a></h2>
+<p>CAN is convenient for its simple and robust Physical Layer (PHY) that requires only a twisted pair of wires and a 120ohm termination resistor at each end.
+It has low jitter and low latency, because there is no host computer.  It is relatively fast (CAN 2.0b supports 1 Mbps).  Messages are easy to configure and load with data.
+Transceivers and controllers are inexpensive and widely available, thanks to its use in automotive.</p>
+</div>
+<div class="section" id="hardware-setup">
+<h2><a class="toc-backref" href="#id3">Hardware Setup</a><a class="headerlink" href="#hardware-setup" title="Permalink to this headline"></a></h2>
+<p>ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end.
+ODrive versions less than V3.5 include a soldered 120 ohm termination resistor, but ODrive versions V3.5 and greater implement a dip switch to toggle the termination.
+ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage &gt; 1.5V to represent a “0”.
+As such, it is compatible with standard 5V bus architectures.</p>
+</div>
+<div class="section" id="setting-up-can-on-odrive">
+<h2><a class="toc-backref" href="#id4">Setting up CAN on ODrive</a><a class="headerlink" href="#setting-up-can-on-odrive" title="Permalink to this headline"></a></h2>
+<p>CANSimple breaks the CAN Message ID into two parts:  An axis ID and a command ID.  By default, CAN is enabled on the ODrive, where Axis 0 has ID 0, and Axis 1 has ID 1.
+The ID of each axis should be unique; each should be set via <code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code> before connecting to the bus with the command:</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">odrv</span><span class="o">&gt;.&lt;</span><span class="n">axis</span><span class="o">&gt;.</span><span class="n">config</span><span class="o">.</span><span class="n">can</span><span class="o">.</span><span class="n">node_id</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">number</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>By default, ODrive supports a value up to 63 (<code class="code docutils literal notranslate"><span class="pre">0x3F</span></code>).  See <a class="reference internal" href="can-protocol.html#can-protocol"><span class="std std-ref">can-protocol</span></a> for more information.</p>
+<p>You should also set the CAN bus speed on ODrive with the command</p>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">odrv</span><span class="o">&gt;.</span><span class="n">can</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">baud_rate</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">number</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Speed</p></th>
+<th class="head"><p>value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>125 kbps</p></td>
+<td><p>125000</p></td>
+</tr>
+<tr class="row-odd"><td><p>250 kbps</p></td>
+<td><p>250000</p></td>
+</tr>
+<tr class="row-even"><td><p>500 kbps</p></td>
+<td><p>500000</p></td>
+</tr>
+<tr class="row-odd"><td><p>1000 kbps</p></td>
+<td><p>1000000</p></td>
+</tr>
+</tbody>
+</table>
+<p>That’s it!  You’re ready to set up your host device.</p>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">can</span><span class="o">.</span><span class="n">node_id</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis1</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">can</span><span class="o">.</span><span class="n">node_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">can</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">baud_rate</span> <span class="o">=</span> <span class="mi">250000</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="setting-up-a-raspberry-pi-for-can-communications">
+<h2><a class="toc-backref" href="#id5">Setting up a Raspberry Pi for CAN Communications</a><a class="headerlink" href="#setting-up-a-raspberry-pi-for-can-communications" title="Permalink to this headline"></a></h2>
+<p>First, you will need a CAN Hat for your Raspberry Pi.
+We are using <a class="reference external" href="https://www.amazon.com/Raspberry-Long-Distance-Communication-Transceiver-SN65HVD230/dp/B07DQPYFYV">this CAN hat</a>.</p>
+<p>Setting up the Raspberry Pi essentially involves the following:
+#. Enable SPI communications to the MCP2515
+#. Install <code class="code docutils literal notranslate"><span class="pre">can-utils</span></code> with <code class="code docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">can-utils</span></code>
+#. Creating a connection between your application and the <code class="code docutils literal notranslate"><span class="pre">can0</span></code> socket</p>
+<p>There are many tutorials for this process.
+<a class="reference external" href="https://www.hackster.io/youness/how-to-connect-raspberry-pi-to-can-bus-b60235">This one is pretty good</a>, and <a class="reference external" href="https://www.raspberrypi.org/forums/viewtopic.php?t=296117">this recent forum post</a> also works.
+However, be careful.  You have to set the correct parameters for the particular CAN hat you’re using!</p>
+<ol class="arabic simple">
+<li><p>Set the correct oscillator value</p></li>
+</ol>
+<p>We configure the MCP2515 in section 2.2 of the tutorial, but the hat we recommend uses a 12MHz crystal instead of a 16 MHz crystal.
+If you’re not sure what value to use, the top of the <a class="reference external" href="https://en.wikipedia.org/wiki/Crystal_oscillator">oscillator</a> will have the value printed on it in MHz.</p>
+<p>My Settings:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nv">dtparam</span><span class="o">=</span>spi-on
+<span class="nv">dtoverlay</span><span class="o">=</span>mcp2515-can0,oscillator<span class="o">=</span><span class="m">12000000</span>,interrupt<span class="o">=</span><span class="m">25</span>
+<span class="nv">dtoverlay</span><span class="o">=</span>spi0-hw-cs
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p>Use the correct CAN baud rate</p></li>
+</ol>
+<p>By default, ODrive uses 250 kbps (250000) but the tutorial is using 500 kbps.  Make sure you use the value set earlier on the ODrive.</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo ip link <span class="nb">set</span> can0 up <span class="nb">type</span> can bitrate <span class="m">250000</span>
+</pre></div>
+</div>
+<div class="section" id="wiring-odrive-to-can">
+<h3>Wiring ODrive to CAN<a class="headerlink" href="#wiring-odrive-to-can" title="Permalink to this headline"></a></h3>
+<p>The CANH and CANL pins on J2 are used for CAN communication.  Connect CANH to CANH on all other devices, and CANL to CANL.</p>
+<p>If your ODrive is the “last” (furthest) device on the bus, you can use the on-board 120 Ohm termination resistor by switching the DIP switch to “CAN 120R”.
+Otherwise, add an external resistor.</p>
+</div>
+<div class="section" id="verifying-communcation">
+<h3>Verifying Communcation<a class="headerlink" href="#verifying-communcation" title="Permalink to this headline"></a></h3>
+<p>By default, each ODrive axis will send a heartbeat message at 10Hz.  We can confirm our ODrive communication is working by starting the <code class="code docutils literal notranslate"><span class="pre">can0</span></code> interface, and then reading from it:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo ip link <span class="nb">set</span> can0 up <span class="nb">type</span> can bitrate <span class="m">250000</span>
+candump can0 -xct z -n <span class="m">10</span>
+</pre></div>
+</div>
+<p>This will read the first 10 messages from the ODrive and stop.  If you’d like to see all messages, remove the <code class="code docutils literal notranslate"><span class="pre">-n</span> <span class="pre">10</span></code> part (hit CTRL+C to exit).
+The other flags (x, c, t) are adding extra information, colouring, and a timestamp, respectively.</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>candump can0 -xct z -n <span class="m">10</span>
+<span class="o">(</span><span class="m">000</span>.000000<span class="o">)</span>  can0  RX - -  <span class="m">001</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">01</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.001995<span class="o">)</span>  can0  RX - -  <span class="m">021</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">08</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.099978<span class="o">)</span>  can0  RX - -  <span class="m">001</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">01</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.101963<span class="o">)</span>  can0  RX - -  <span class="m">021</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">08</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.199988<span class="o">)</span>  can0  RX - -  <span class="m">001</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">01</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.201980<span class="o">)</span>  can0  RX - -  <span class="m">021</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">08</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.299986<span class="o">)</span>  can0  RX - -  <span class="m">001</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">01</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.301976<span class="o">)</span>  can0  RX - -  <span class="m">021</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">08</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.399986<span class="o">)</span>  can0  RX - -  <span class="m">001</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">01</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+<span class="o">(</span><span class="m">000</span>.401972<span class="o">)</span>  can0  RX - -  <span class="m">021</span>   <span class="o">[</span><span class="m">8</span><span class="o">]</span>  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">08</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>
+</pre></div>
+</div>
+<p>Alternatively, if you have python can installed (<code class="code docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">python-can</span></code>), you can use the can.viewer script:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">can.viewer</span> <span class="pre">-c</span> <span class="pre">&quot;can0&quot;</span> <span class="pre">-i</span> <span class="pre">&quot;socketcan&quot;</span></code> which will give you a nice readout.
+See the <a class="reference external" href="https://python-can.readthedocs.io/en/master/scripts.html#can-viewer">python-can docs</a> for an example.</p>
+</div>
+</div>
+<div class="section" id="commanding-the-odrive">
+<h2><a class="toc-backref" href="#id6">Commanding the ODrive</a><a class="headerlink" href="#commanding-the-odrive" title="Permalink to this headline"></a></h2>
+<p>Now that we’ve verified the communication is working, we can try commanding the ODrive.
+Make sure your ODrive is configured and working properly over USB with:code:<cite>odrivetool</cite> before continuing.
+See the <a class="reference external" href="https://docs.python.org/3/library/unittest.mock-examples.html#getting-started" title="(in Python v3.10)"><span class="xref std std-ref">Getting Started Guide</span></a> for help with first-time configuration.</p>
+<p>To move the ODrive, we use the command <code class="code docutils literal notranslate"><span class="pre">Set</span> <span class="pre">Input</span> <span class="pre">Pos</span></code>, or cmd ID <code class="code docutils literal notranslate"><span class="pre">0x00C</span></code>.  First we create a message with this ID, and then “OR” in the axis ID.
+Then we create an 8-byte array of data with input position that we want, with a float value turned into bytes… this can be a pain though.</p>
+</div>
+<div class="section" id="dbc-files">
+<h2><a class="toc-backref" href="#id7">DBC Files</a><a class="headerlink" href="#dbc-files" title="Permalink to this headline"></a></h2>
+<p>A DBC file (.dbc) is a database of all the messages and signals in a CAN protocol.
+This file can be used with Python cantools to serialize and deserialize messages without having to handle the bitshifting etc yourself.
+We have generated a .dbc for CANSimple for you!</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/odriverobotics/ODrive/tree/master/tools/odrive-cansimple.dbc">CANSimple DBC File</a></p></li>
+<li><p><a class="reference external" href="https://github.com/odriverobotics/ODrive/tree/master/tools/create_can_dbc.py">CANSimple DBC Generator Script</a></p></li>
+</ul>
+<p>Instead of manually writing values into the data, we can create a dictionary of signal:value pairs and serialize the data according to the database definition.</p>
+<ol class="arabic simple">
+<li><p>Load the database into memory</p></li>
+<li><p>Use <code class="code docutils literal notranslate"><span class="pre">encode_message()</span></code> to get a byte array representation of data for sending</p></li>
+<li><p>Use <code class="code docutils literal notranslate"><span class="pre">decode_message()</span></code> to get a dictionary representation of data for receiving</p></li>
+</ol>
+<p>The <a class="reference external" href="https://github.com/odriverobotics/ODrive/blob/master/tools/can_dbc_example.py">CAN DBC Example</a> script shows you how this can be used.  This is the recommended method of serializing and deserializing.</p>
+<p>If you’re using C++, then you can use the <a class="reference external" href="https://github.com/odriverobotics/ODrive/blob/master/Firmware/communication/can/can_helpers.hpp">CANHelpers</a> single-header library to do this instead, although the DBC file isn’t used.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="migration.html" class="btn btn-neutral float-left" title="Migration Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="protocol.html" class="btn btn-neutral float-right" title="ODrive Communication Protocol" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

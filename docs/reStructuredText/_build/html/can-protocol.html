@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAN Protocol &mdash; ODrive Documentation 0.0 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" type="text/css" />
+      <link rel="stylesheet" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step/Direction" href="step-direction.html" />
+    <link rel="prev" title="ASCII Protocol" href="ascii-protocol.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ODrive Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CAN Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-odrive-for-can">Configuring ODrive for CAN</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-configuration">Example Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#transport-protocol">Transport Protocol</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#can-frame">CAN Frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interoperability-with-canopen">Interoperability with CANopen</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>CAN Protocol</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/can-protocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="can-protocol">
+<span id="id1"></span><h1>CAN Protocol<a class="headerlink" href="#can-protocol" title="Permalink to this headline"></a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#configuring-odrive-for-can" id="id2">Configuring ODrive for CAN</a></p></li>
+<li><p><a class="reference internal" href="#transport-protocol" id="id3">Transport Protocol</a></p></li>
+</ul>
+</div>
+<p>This document describes the CAN Protocol.  For examples of usage, check out our <a class="reference internal" href="can-guide.html#can-guide"><span class="std std-ref">CAN Guide!</span></a></p>
+<div class="section" id="configuring-odrive-for-can">
+<h2><a class="toc-backref" href="#id2">Configuring ODrive for CAN</a><a class="headerlink" href="#configuring-odrive-for-can" title="Permalink to this headline"></a></h2>
+<p>Configuration of the CAN parameters should be done via USB before putting the device on the bus.</p>
+<p>To set the desired baud rate, use <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.can.config.baud_rate</span> <span class="pre">=</span> <span class="pre">&lt;value&gt;</span></code>.</p>
+<p>Each axis looks like a separate node on the bus.
+Thus, they both have the two properties <code class="code docutils literal notranslate"><span class="pre">can_node_id</span></code> and <code class="code docutils literal notranslate"><span class="pre">can_node_id_extended</span></code>.
+The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF).
+If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.</p>
+<div class="section" id="example-configuration">
+<h3>Example Configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span><span class="n">odrv0</span><span class="o">.</span><span class="n">axis0</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">can_node_id</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">axis1</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">can_node_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">can</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">baud_rate</span> <span class="o">=</span> <span class="mi">500000</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">save_configuration</span><span class="p">()</span>
+<span class="n">odrv0</span><span class="o">.</span><span class="n">reboot</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="transport-protocol">
+<h2><a class="toc-backref" href="#id3">Transport Protocol</a><a class="headerlink" href="#transport-protocol" title="Permalink to this headline"></a></h2>
+<p>We’ve implemented a very basic CAN protocol that we call “CAN Simple” to get users going with ODrive.
+This protocol is sufficiently abstracted that it is straightforward to add other protocols such as CANOpen, J1939, or Fibre over ISO-TP in the future.
+Unfortunately, implementing those protocols is a lot of work, and we wanted to give users a way to control ODrive’s basic functions via CAN sooner rather than later.</p>
+<div class="section" id="can-frame">
+<h3>CAN Frame<a class="headerlink" href="#can-frame" title="Permalink to this headline"></a></h3>
+<p>At its most basic, the CAN Simple frame looks like this:</p>
+<ul class="simple">
+<li><p>Upper 6 bits - Node ID - max 0x3F (or 0xFFFFFF when using extended CAN IDs)</p></li>
+<li><p>Lower 5 bits - Command ID - max 0x1F</p></li>
+</ul>
+<p>To understand how the Node ID and Command ID interact, let’s look at an example</p>
+<p>The 11-bit Arbitration ID is setup as follows:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">can_id</span> <span class="pre">=</span> <span class="pre">axis_id</span> <span class="pre">&lt;&lt;</span> <span class="pre">5</span> <span class="pre">|</span> <span class="pre">cmd_id</span></code></p>
+<p>For example, an Axis ID of <code class="code docutils literal notranslate"><span class="pre">0x01</span></code> with a command of <code class="code docutils literal notranslate"><span class="pre">0x0C</span></code> would be result in <code class="code docutils literal notranslate"><span class="pre">0x2C</span></code>:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">0x01</span> <span class="pre">&lt;&lt;</span> <span class="pre">5</span> <span class="pre">|</span> <span class="pre">0x0C</span> <span class="pre">=</span> <span class="pre">0x2C</span></code></p>
+<hr class="docutils" />
+<p>All multibyte values are little endian (aka Intel format, aka least significant byte first).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>These messages are call &amp; response. The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.</p></li>
+<li><p>These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.</p></li>
+<li><p>These messages can be sent to either address on a given ODrive board.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="interoperability-with-canopen">
+<h3>Interoperability with CANopen<a class="headerlink" href="#interoperability-with-canopen" title="Permalink to this headline"></a></h3>
+<p>You can deconflict with CANopen like this:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.config.can.node_id</span> <span class="pre">=</span> <span class="pre">0x010</span></code> - Reserves messages 0x200 through 0x21F</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">odrv0.axis1.config.can.node_id</span> <span class="pre">=</span> <span class="pre">0x018</span></code> - Reserves messages 0x300 through 0x31F</p></li>
+</ul>
+<p>It may not be obvious, but this allows for some compatibility with CANOpen.
+Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are &gt;= 32.  E.g.:</p>
+<ul class="simple">
+<li><p>CANopen nodeID = 35 = 0x23</p></li>
+<li><p>Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]</p></li>
+</ul>
+<p>Be careful that you don’t assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.
+If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ascii-protocol.html" class="btn btn-neutral float-left" title="ASCII Protocol" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="step-direction.html" class="btn btn-neutral float-right" title="Step/Direction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
