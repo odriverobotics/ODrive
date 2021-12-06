@@ -148,9 +148,9 @@
 <p>For the most part, both axes on the ODrive can be controlled independently.</p>
 <div class="section" id="state-machine">
 <h3>State Machine<a class="headerlink" href="#state-machine" title="Permalink to this headline"></a></h3>
-<p>The current state of an axis is indicated by <code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.current_state</span></code>.
-The user can request a new state by assigning a new value to <code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.requested_state</span></code>.
-The default state after startup is <code class="code docutils literal notranslate"><span class="pre">AXIS_STATE_IDLE</span></code>. A description of all states can be found <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+<p>The current state of an axis is indicated by <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Axis.current_state" title="ODrive.Axis.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.current_state</span></code></a>.
+The user can request a new state by assigning a new value to <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Axis.current_state" title="ODrive.Axis.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">&lt;axis&gt;.requested_state</span></code></a>.
+The default state after startup is <code class="code docutils literal notranslate"><span class="pre">AXIS_STATE_IDLE</span></code>. A description of all states can be found <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Axis.AxisState" title="ODrive.Axis.AxisState"><code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code></a>.</p>
 </div>
 <div class="section" id="startup-procedure">
 <span id="commands-startup-procedure"></span><h3>Startup Procedure<a class="headerlink" href="#startup-procedure" title="Permalink to this headline"></a></h3>
@@ -163,13 +163,13 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 <li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_encoder_offset_calibration</span></code></p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_closed_loop_control</span></code></p></li>
 </ul>
-<p>See <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code> for a description of each state.</p>
+<p>See <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Axis.AxisState" title="ODrive.Axis.AxisState"><code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code></a> for a description of each state.</p>
 </div>
 <div class="section" id="control-mode">
 <h3>Control Mode<a class="headerlink" href="#control-mode" title="Permalink to this headline"></a></h3>
 <p>The default control mode is position control.
 If you want a different mode, you can change <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.config.control_mode</span></code>.
-Possible values are listed <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+Possible values are listed <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Controller.ControlMode" title="ODrive.Controller.ControlMode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code></a>.</p>
 </div>
 <div class="section" id="input-mode">
 <h3>Input Mode<a class="headerlink" href="#input-mode" title="Permalink to this headline"></a></h3>
@@ -185,7 +185,7 @@ This allows us to condense the number of ways the ODrive accepts motion commands
 </ul>
 <p>Modes can be selected by changing <code class="code docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.config.input_mode</span></code>.
 The default input mode is <code class="code docutils literal notranslate"><span class="pre">INPUT_MODE_PASSTHROUGH</span></code>.
-Possible values are listed <code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code>.</p>
+Possible values are listed <a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html#ODrive.Controller.InputMode" title="ODrive.Controller.InputMode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">here</span></code></a>.</p>
 </div>
 </div>
 </div>

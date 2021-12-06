@@ -19,9 +19,9 @@ For the most part, both axes on the ODrive can be controlled independently.
 State Machine
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The current state of an axis is indicated by :attr:`<axis>.current_state <api/odrive.axis-current_state>`. 
-The user can request a new state by assigning a new value to :attr:`<axis>.requested_state <api/odrive.axis-current_state>`. 
-The default state after startup is :code:`AXIS_STATE_IDLE`. A description of all states can be found :attr:`here <api/odrive.axis.axisstate>`.
+The current state of an axis is indicated by :attr:`<axis>.current_state <ODrive.Axis.current_state>`. 
+The user can request a new state by assigning a new value to :attr:`<axis>.requested_state <ODrive.Axis.current_state>`. 
+The default state after startup is :code:`AXIS_STATE_IDLE`. A description of all states can be found :attr:`here <ODrive.Axis.AxisState>`.
 
 .. _commands-startup-procedure:
 
@@ -37,14 +37,14 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * :code:`<axis>.config.startup_encoder_offset_calibration`
 * :code:`<axis>.config.startup_closed_loop_control`
 
-See :attr:`here <api/odrive.axis.axisstate>` for a description of each state.
+See :attr:`here <ODrive.Axis.AxisState>` for a description of each state.
 
 Control Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The default control mode is position control.
 If you want a different mode, you can change :code:`<axis>.controller.config.control_mode`.
-Possible values are listed :attr:`here <api/odrive.controller.controlmode>`.
+Possible values are listed :attr:`here <ODrive.Controller.ControlMode>`.
 
 Input Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,7 +63,7 @@ Control Commands
 
 Modes can be selected by changing :code:`<axis>.controller.config.input_mode`.
 The default input mode is :code:`INPUT_MODE_PASSTHROUGH`.
-Possible values are listed :attr:`here <api/odrive.controller.inputmode>`.
+Possible values are listed :attr:`here <ODrive.Controller.InputMode>`.
 
 System Monitoring Commands
 -------------------------------------------------------------------------------
