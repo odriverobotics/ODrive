@@ -2,6 +2,9 @@
 Automated Testing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. contents::
+   :depth: 1
+   :local:
 
 This section describes how to use the automated testing facilities.
 You don't have to do this as an end user.
@@ -186,7 +189,7 @@ To flash and start remote debugging:
             ssh -t odrv -L3333:localhost:3333 bash -c "\"openocd '-f' 'interface/stlink-v2.cfg' '-f' 'target/stm32f4x_stlink.cfg'\""
       
       
-      You can keep this open for multiple debug sessions. Press :kbd:`Ctrl` **+** :kbd:`C`to quit.
+      You can keep this open for multiple debug sessions. Press :kbd:`Ctrl` **+** :kbd:`C` to quit.
 
 #. Compile the firmware.
 #. In VSCode, select the run configuration "Debug ODrive v3.x/v4.x - Remote" and press Run. This will flash the new firmware before dropping you into the debugger.

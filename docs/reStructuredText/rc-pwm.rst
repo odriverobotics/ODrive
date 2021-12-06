@@ -4,6 +4,10 @@
 RC PWM input
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 You can control the ODrive directly from a hobby RC receiver.
 
 Any of the numerical parameters that are writable from the ODrive Tool can be hooked up to a PWM input. 

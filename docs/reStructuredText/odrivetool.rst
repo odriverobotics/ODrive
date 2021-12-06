@@ -4,6 +4,10 @@
 :code:`odrivetool`
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 The :code:`odrivetool` is the accompanying PC program for the ODrive. It's main purpose is to provide an interactive shell to control the device manually, as well as some supporting functions like firmware update.
 
 Installation

@@ -547,7 +547,7 @@ Upgrading from 0.4.12
 --------------------------------------------------------------------------------
 
 A new version (0.5.4) of ODrive firmware has released, complete with a new odrivetool. 
-Follow the installation instructions, making sure to add the :code:`--upgrade` flag to pip commands, and check out the :ref:`Changelog <../CHANGELOG.md>` for changes!
+Follow the installation instructions, making sure to add the :code:`--upgrade` flag to pip commands, and check out the `Changelog <https://github.com/odriverobotics/ODrive/blob/master/CHANGELOG.md>`_ for changes!
 
 The odrivetool will stage and restore your configuration.  
 This probably isn't wise for the 0.4.12 -> 0.5.1 upgrade, so we suggest using :code:`odrv0.erase_configuration()` immediately after connecting the first time.

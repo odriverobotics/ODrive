@@ -4,6 +4,10 @@
 Configuring Visual Studio Code
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 VSCode is the recommended IDE for working with the ODrive codebase.  
 It is a light-weight text editor with Git integration and GDB debugging functionality.
 

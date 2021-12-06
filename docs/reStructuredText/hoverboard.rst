@@ -5,6 +5,10 @@
 Hoverboard motor and remote control setup guide
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 By popular request here follows a step-by-step guide on how to setup the ODrive to drive hoverboard motors using RC PWM input.
 Each step is accompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
 

@@ -4,6 +4,10 @@
  Control Structure and Tuning
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+
 The motor controller is a cascaded style position, velocity and current control loop, as per the diagram below. 
 When the control mode is set to position control, the whole loop runs. 
 When running in velocity control mode, the position control part is removed and the velocity command is fed directly in to the second stage input. 

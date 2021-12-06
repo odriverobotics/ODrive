@@ -4,6 +4,10 @@
 CAN Protocol
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+
 This document describes the CAN Protocol.  For examples of usage, check out our :ref:`CAN Guide! <can-guide>`
 
 

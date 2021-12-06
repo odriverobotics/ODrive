@@ -4,6 +4,10 @@
 Troubleshooting
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 .. _error-codes:
 
 Error Codes

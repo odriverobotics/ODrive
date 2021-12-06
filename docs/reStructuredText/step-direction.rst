@@ -2,6 +2,10 @@
 Step/Direction
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 This is the simplest possible way of controlling the ODrive. 
 It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
 

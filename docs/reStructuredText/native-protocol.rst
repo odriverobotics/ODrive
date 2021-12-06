@@ -22,7 +22,7 @@ Assuming you already installed the odrive library (:code:`pip install odrive`), 
     print(str(odrv0.vbus_voltage))
 
 
-For a more comprehensive example, see :ref:`tools/odrive_demo.py <../tools/odrive_demo.py>`.
+For a more comprehensive example, see `tools/odrive_demo.py <https://github.com/odriverobotics/ODrive/blob/master/tools/odrive_demo.py>`_.
 
 Other Languages
 --------------------------------------------------------------------------------

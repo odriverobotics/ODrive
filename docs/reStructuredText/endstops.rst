@@ -2,6 +2,10 @@
 Endstops and Homing
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 By default, the ODrive assumes that your motor encoder's zero position is the same as your machine's zero position, but in real life this is rarely the case.  
 In these systems it is useful to allow your motor to move until a physical or electronic device orders the system to stop. 
 That `endstop` can be used as a known reference point. Once the ODrive has hit that position it may then want to move to a final zero, or `home`, position.  

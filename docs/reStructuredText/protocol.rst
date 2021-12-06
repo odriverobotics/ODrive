@@ -4,6 +4,10 @@
 ODrive Communication Protocol
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 Communicating with an ODrive consists of a series of endpoint operations.
 An endpoint can theoretically be any kind data serialized in any way.
 There is a default serialization implementation for POD types; for custom types

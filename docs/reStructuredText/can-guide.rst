@@ -4,6 +4,10 @@
 CAN Bus Guide for ODrive
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 ODrive v3 supports CAN 2.0b. We've built a :ref:`simple protocol <can-protocol>` (named CANSimple) so that most ODrive functions can be controlled without a full CAN Open or similar stack.  
 This guide is intended for beginners to set up CAN on the ODrive and on their host device.  
 We will be focusing on Raspberry Pi and Arduino-compatible devices using the MCP2515 CAN Controller.
@@ -192,8 +196,8 @@ A DBC file (.dbc) is a database of all the messages and signals in a CAN protoco
 This file can be used with Python cantools to serialize and deserialize messages without having to handle the bitshifting etc yourself. 
 We have generated a .dbc for CANSimple for you!
 
-* :ref:`CANSimple DBC File <../tools/odrive-cansimple.dbc>`
-* :ref:`CANSimple DBC Generator Script <../tools/create_can_dbc.py>`
+* `CANSimple DBC File <https://github.com/odriverobotics/ODrive/tree/master/tools/odrive-cansimple.dbc>`_
+* `CANSimple DBC Generator Script <https://github.com/odriverobotics/ODrive/tree/master/tools/create_can_dbc.py>`_
 
 Instead of manually writing values into the data, we can create a dictionary of signal:value pairs and serialize the data according to the database definition.
 
@@ -201,6 +205,6 @@ Instead of manually writing values into the data, we can create a dictionary of 
 #. Use :code:`encode_message()` to get a byte array representation of data for sending
 #. Use :code:`decode_message()` to get a dictionary representation of data for receiving
 
-The :ref:`CAN DBC Example <../tools/can_dbc_example.py>` script shows you how this can be used.  This is the recommended method of serializing and deserializing.
+The `CAN DBC Example <https://github.com/odriverobotics/ODrive/blob/master/tools/can_dbc_example.py>`_ script shows you how this can be used.  This is the recommended method of serializing and deserializing.
 
-If you're using C++, then you can use the :ref:`CANHelpers <..firmware/communication/../../../Firmware/communication/can/can_helpers.hpp>` single-header library to do this instead, although the DBC file isn't used.
+If you're using C++, then you can use the `CANHelpers <https://github.com/odriverobotics/ODrive/blob/master/Firmware/communication/can/can_helpers.hpp>`_ single-header library to do this instead, although the DBC file isn't used.

@@ -14,7 +14,7 @@ As such it assumes that you know things like how to use Git, what a compiler is,
 
 The official releases are maintained on the `master` branch. However since you are a developer, you are encouraged to use the `devel` branch, as it contains the latest features.
 
-The project is under active development, so make sure to check the :ref:`Changelog <../CHANGELOG.md>` to keep track of updates.
+The project is under active development, so make sure to check the `Changelog <https://github.com/odriverobotics/ODrive/tree/master/CHANGELOG.md>`_ to keep track of updates.
 
 .. _dev-prereq:
 
@@ -475,5 +475,5 @@ When filing a PR please go through this checklist:
  * Also, for each removed/moved/renamed API item use your IDE's search feature to search for occurrences of this name. Update the places you found (this will usually be documentation and test scripts).
  * If you added things to :code:`odrive-interface.yaml` make sure the new things have decent documentation in the YAML file. We don't expect 100% coverage but use good sense of what to document.
  * Make sure your PR doesn't contain spurious changes that unnecessarily add or remove whitespace. These add noise and make the reviewer's lifes harder.
- * If you changed any enums in :code:`odrive-interface.yaml`, make sure you update :ref:`enums.py <../tools/odrive/enums.py>` and :ref:`ODriveEnums.h <../Arduino/ODriveArduino/ODriveEnums.h>`. 
+ * If you changed any enums in :code:`odrive-interface.yaml`, make sure you update `enums.py <https://github.com/odriverobotics/ODrive/blob/master/tools/odrive/enums.py>`_ and `ODriveEnums.h <https://github.com/odriverobotics/ODrive/blob/master/Arduino/ODriveArduino/ODriveEnums.h>`_. 
    The file includes instructions on how to do this. Check the diff to verify that none of the existing enumerators changed their value.

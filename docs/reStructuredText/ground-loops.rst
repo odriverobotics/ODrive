@@ -5,6 +5,10 @@
 Ground Loops
 ================================================================================
 
+.. contents::
+   :depth: 1
+   :local:
+   
 For electrical devices to communicate, most of the time they require a common ground connection. 
 Best practice is to connect the grounds back to a single point, called a "star ground". 
 If there are multiple paths to ground, a "ground loop" is formed. 
