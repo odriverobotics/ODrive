@@ -444,7 +444,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     }
 
     float I_beta = control_law.get_Ibeta();
-    if (is_nan(I_beta) || (abs(I_beta) / test_current) > 0.1f) {
+    if (is_nan(I_beta) || (abs(I_beta) / test_current) > 0.2f) {
         disarm_with_error(ERROR_UNBALANCED_PHASES);
         success = false;
     }
