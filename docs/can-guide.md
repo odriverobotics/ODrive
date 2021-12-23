@@ -135,4 +135,4 @@ Instead of manually writing values into the data, we can create a dictionary of 
 
 The [CAN DBC Example](../tools/can_dbc_example.py) script shows you how this can be used.  This is the recommended method of serializing and deserializing.
 
-If you're using C++, then you can use the [CANHelpers](..firmware/communication/../../../Firmware/communication/can/can_helpers.hpp) single-header library to do this instead, although the DBC file isn't used.
+If you're using C++, then you can use the [CANHelpers](../Firmware/communication/can/can_helpers.hpp) single-header library to do this instead, although the DBC file isn't used.
