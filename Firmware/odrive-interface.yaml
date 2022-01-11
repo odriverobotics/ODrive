@@ -477,6 +477,7 @@ interfaces:
             type: float32
             unit: s
           enable_watchdog: bool
+          enable_brake_state_fallthrough_on_watchdog_timeout: bool
           step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
           dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}
           calibration_lockin: # TODO: this is a subset of lockin state
@@ -1368,6 +1369,12 @@ valuetypes:
         brief: Rotate the motor for 30s to calibrate hall sensor edge offsets
         doc:
           The phase offset is not calibrated at this time, so the map is only relative
+      BRAKE:
+        brief: Like CLOSED_LOOP_CONTROL with velocity control but forces desired velocity to zero
+        doc: |
+          This can be configured as watchdog timeout fallback state instead of idle to avoid
+          unintentional rolling e.g. when a vehicle is getting a software error or reboot on an
+          incline.
 
   ODrive.Encoder.Mode:
     values:
