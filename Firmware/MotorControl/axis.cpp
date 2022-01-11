@@ -169,16 +169,27 @@ void Axis::watchdog_feed() {
 
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
-    if (!config_.enable_watchdog) return true;
-
+    if (!config_.enable_watchdog) {
+        return true;
+    }
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
     if (watchdog_current_value_ > 0) {
         watchdog_current_value_--;
         return true;
-    } else {
-        error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
-        return false;
     }
+    error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
+    // Go to braking state from closed loop control when watchdog times out.
+    if (current_state_ == AXIS_STATE_CLOSED_LOOP_CONTROL &&
+        config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
+        requested_state_ = AXIS_STATE_BRAKE;
+        return true;
+    }
+    // Don't care about timeouts in AXIS_STATE_BRAKE if brake state fallthrough is enabled.
+    if (current_state_ == AXIS_STATE_BRAKE &&
+        config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
+        return true;
+    }
+    return false;
 }
 
 bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
