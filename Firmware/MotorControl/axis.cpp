@@ -177,10 +177,12 @@ bool Axis::watchdog_check() {
         watchdog_current_value_--;
         return true;
     }
-    error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
     // Go to braking state from closed loop control when watchdog times out.
     if (current_state_ == AXIS_STATE_CLOSED_LOOP_CONTROL &&
         config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
+        //controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
+        //controller_.config_.input_mode = Controller::INPUT_MODE_PASSTHROUGH;
+        //controller_.input_vel_ = 0;
         requested_state_ = AXIS_STATE_BRAKE;
         return true;
     }
@@ -189,6 +191,7 @@ bool Axis::watchdog_check() {
         config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
         return true;
     }
+    error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
     return false;
 }
 
