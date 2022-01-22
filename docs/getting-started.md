@@ -300,7 +300,7 @@ control connection to the ODrive is interrupted.
 Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
 measured in seconds. Set `axis.config.enable_watchdog = True` to turn on this feature.
 
-The watchdog is fed using the `axis.watchdog_feed()` method of each axis. Some [ascii commands](ascii-protocol.md#command-reference) feed the watchdog automatically.
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. Some [ascii commands](ascii-protocol.md#command-reference), and most CANSimple commands, feed the watchdog automatically.
 
 ## What's next?
 You can now:
