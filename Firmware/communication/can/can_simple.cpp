@@ -205,7 +205,7 @@ void CANSimple::set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg) {
 }
 
 void CANSimple::set_axis_requested_state_callback(Axis& axis, const can_Message_t& msg) {
-    axis.requested_state_ = static_cast<Axis::AxisState>(can_getSignal<int32_t>(msg, 0, 16, true));
+    axis.requested_state_ = static_cast<Axis::AxisState>(can_getSignal<int32_t>(msg, 0, 32, true));
 }
 
 void CANSimple::set_axis_startup_config_callback(Axis& axis, const can_Message_t& msg) {
