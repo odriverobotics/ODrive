@@ -1,0 +1,184 @@
+{
+    "definitions": {
+        "interface": {
+            "type": "object",
+            "properties": {
+                "c_is_class": {
+                    "type": "boolean"
+                },
+                "c_name": {
+                    "type": "string"
+                },
+                "brief": {
+                    "type": "string"
+                },
+                "doc": {
+                    "type": "string"
+                },
+                "implements": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/intf_type_ref"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/intf_type_ref"
+                            }
+                        }
+                    ]
+                },
+                "functions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/function"
+                    }
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/attribute"
+                    }
+                }
+            },
+            "required": [
+                "c_is_class"
+            ],
+            "additionalProperties": false
+        },
+        "valuetype": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string"
+                },
+                "c_name": {
+                    "type": "string"
+                },
+                "values": {
+                    "type": "object"
+                },
+                "flags": {
+                    "type": "object"
+                },
+                "nullflag": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "intf_type_ref": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "$ref": "#/definitions/interface"
+                }
+            ]
+        },
+        "intf_or_val_type": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/interface"
+                },
+                {
+                    "$ref": "#/definitions/valuetype"
+                },
+                {
+                    "type": "string"
+                }
+            ]
+        },
+        "attribute": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/intf_or_val_type"
+                },
+                {
+                    "type": "object"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "$ref": "#/definitions/intf_or_val_type"
+                        },
+                        "c_name": {
+                            "type": "string"
+                        },
+                        "unit": {
+                            "type": "string"
+                        },
+                        "doc": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "function": {
+            "anyOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string"
+                        },
+                        "in": {
+                            "type": "object"
+                        },
+                        "out": {
+                            "type": "object"
+                        },
+                        "brief": {
+                            "type": "string"
+                        },
+                        "doc": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            ]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "ns": {
+            "type": "string"
+        },
+        "version": {
+            "type": "string"
+        },
+        "summary": {
+            "type": "string"
+        },
+        "dictionary": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "interfaces": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/interface"
+            }
+        },
+        "valuetypes": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/valuetype"
+            }
+        },
+        "userdata": {
+            "type": "object"
+        }
+    },
+    "additionalProperties": false
+}

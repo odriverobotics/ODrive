@@ -1,0 +1,107 @@
+CMD ID,Name,Sender,Signals,Start byte,Signal Type,Bits,Factor,Offset
+0x000,CANOpen NMT Message**,Master,-,-,-,-,-,-
+0x001,ODrive Heartbeat Message,Axis,"Axis Error
+Axis Current State
+Controller Status","0
+4
+7","Unsigned Int
+Unsigned Int
+Bitfield","32
+8
+8","-
+-
+-","-
+-
+-"
+0x002,ODrive Estop Message,Master,-,-,-,-,-,-
+0x003,Get Motor Error*,Axis,Motor Error,0,Unsigned Int,64,1,0
+0x004,Get Encoder Error*,Axis,Encoder Error,0,Unsigned Int,32,1,0
+0x005,Get Sensorless Error*,Axis,Sensorless Error,0,Unsigned Int,32,1,0
+0x006,Set Axis Node ID,Master,Axis CAN Node ID,0,Unsigned Int,32,1,0
+0x007,Set Axis Requested State,Master,Axis Requested State,0,Unsigned Int,32,1,0
+0x008,Set Axis Startup Config,Master,- Not yet implemented -,-,-,-,-,-
+0x009,Get Encoder Estimates*,Master,"Encoder Pos Estimate
+Encoder Vel Estimate","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x00A,Get Encoder Count*,Master,"Encoder Shadow Count
+Encoder Count in CPR","0
+4","Signed Int
+Signed Int","32
+32","1
+1","0
+0"
+0x00B,Set Controller Modes,Master,"Control Mode
+Input Mode","0
+4","Signed Int
+Signed Int","32
+32","1
+1","0
+0"
+0x00C,Set Input Pos,Master,"Input Pos
+Vel FF
+Torque FF","0
+4
+6","IEEE 754 Float
+Signed Int
+Signed Int","32
+16
+16","1
+0.001
+0.001","0
+0
+0"
+0x00D,Set Input Vel,Master,"Input Vel
+Torque FF","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x00E,Set Input Torque,Master,Input Torque,0,IEEE 754 Float,32,1,0
+0x00F,Set Limits,Master,"Velocity Limit
+Current Limit","0
+4","IEEE 754 Float
+IEEE 754 Float",32,"1
+1","0
+0"
+0x010,Start Anticogging,Master,-,-,-,-,-,-
+0x011,Set Traj Vel Limit,Master,Traj Vel Limit,0,IEEE 754 Float,32,1,0
+0x012,Set Traj Accel Limits,Master,"Traj Accel Limit
+Traj Decel Limit","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x013,Set Traj Inertia,Master,Traj Inertia,0,IEEE 754 Float,32,1,0
+0x014,Get IQ*,Axis,"Iq Setpoint
+Iq Measured","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x015,Get Sensorless Estimates*,Master,"Sensorless Pos Estimate
+Sensorless Vel Estimate","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x016,Reboot ODrive,Master***,-,-,-,-,-,-
+0x017,Get Vbus Voltage,Master***,Vbus Voltage,0,IEEE 754 Float,32,1,0
+0x018,Clear Errors,Master,-,-,-,-,-,-
+0x019,Set Linear Count,Master,Position,0,Signed Int,32,1,0
+0x01A,Set Position Gain,Master,Pos Gain,0,IEEE 754 Float,32,1,0
+0x01B,Set Vel Gains,Master,"Vel Gain
+Vel Integrator Gain","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
+0x700,CANOpen Heartbeat Message**,Slave,-,-,-,-,-,-
