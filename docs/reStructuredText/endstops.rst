@@ -110,7 +110,7 @@ The GPIOs that are used for the endstops need to be configured according to the 
 Assuming your endstop is connected to GPIO X:
 
 * Configuration 1, 2: :code:`<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
-* Configuration 3, 4: :code:`<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
+* Configuration 3, 4: :code:`<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_UP`
 
 .. figure:: figures/Endstop_configuration.png
     :scale: 50 %
@@ -119,14 +119,14 @@ Assuming your endstop is connected to GPIO X:
 Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If we want to configure a 3D printer-style (configuration 4) minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn with a 8192 cpr encoder, we would set:
+If we want to configure a 3D printer-style (configuration 4) minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn, we would set:
 
 .. code:: iPython
 
     <odrv>.config.gpio5_mode = GPIO_MODE_DIGITAL
     <odrv>.<axis>.min_endstop.config.gpio_num = 5
     <odrv>.<axis>.min_endstop.config.is_active_high = False
-    <odrv>.<axis>.min_endstop.config.offset = -1.0*(8912/4)
+    <odrv>.<axis>.min_endstop.config.offset = -0.25
     <odrv>.<axis>.min_endstop.config.enabled = True
     <odrv>.config.gpio5_mode = GPIO_MODE_DIGITAL_PULL_UP
 

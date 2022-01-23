@@ -70,6 +70,33 @@ All multibyte values are little endian (aka Intel format, aka least significant 
     * These messages can be sent to either address on a given ODrive board.
 
 
+Cyclic Messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cyclic messages are sent by ODrive on a timer without a request. As of firmware verion `0.5.4`, the Cyclic messsages are:
+
+.. list-table::
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - ID
+     - Name
+     - Rate (ms)
+   * - 0x001
+     - ODrive Heartbeat Message
+     - 100
+   * - 0x009
+     - Encoder Estimates
+     - 10
+
+.. ID | Name | Rate (ms)
+.. --:    | :--  | :--
+.. 0x001 | ODrive Heartbeat Message | 100
+.. 0x009 | Encoder Estimates | 10
+
+These can be configured for each axis, see e.g. :code:`axis.config.can`.
+
+
 Interoperability with CANopen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

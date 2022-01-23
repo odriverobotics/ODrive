@@ -157,3 +157,10 @@ False steps or direction changes when using step/dir
   A section cut from cat-5 cable works well as does just twisting some normal insulated wire together.
 * Ensure that the step/dir signal cables are not draped over the odrive board, are not running in parallel to the motor or power supply cables.
 * If the above does not resolve your issue on V3.4 boards and lower try adding a ~22 Ohm resistor in series with the step and direction pins along with a ~ 4.7 nF capacitor between the ground pin and the step and dir pins such as shown `here <https://cdn.discordapp.com/attachments/369667319280173069/420811057431445504/IMG_20180306_211224.jpg>`_.
+
+Index search never completes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* There are some GPIO pin interrupt collisions on ODrive 3.6 that could cause index search to fail in certain conditions. 
+  If you are using both step/dir and index pins, we recommend disabling :code:`step_dir_always_on`.  
+  For more information, `see this thread <https://github.com/odriverobotics/ODrive/issues/605#issuecomment-971576393>`_.

@@ -52,6 +52,27 @@ You may wire the motor phases in any order into a motor connector on the ODrive,
   You can see instructions `here <https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe>`__.
 
 
+ODrive Configuration
+-------------------------------------------------------------------------------
+There are a few items we need to configure on the ODrive before setting up the motor.
+
+* :code:`odrv0.config.enable_brake_resistor`
+    Set this to `True` if using a brake resistor. 
+    You need to save the ODrive configuration and reboot the ODrive for this to take effect.
+
+* :code:`odrv0.config.brake_resistance` [Ohm]  
+    This is the resistance of the brake resistor. 
+    You can leave this at the default setting if you are not using a brake resistor. 
+    Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
+
+* :code:`odrv0.config.dc_max_negative_current` [Amps]
+    This is the amount of current allowed to flow back into the power supply. 
+    The convention is that it is negative. By default, it is set to a conservative value of 10mA. 
+    If you are using a brake resistor and getting :code:`DC_BUS_OVER_REGEN_CURRENT` errors, raise it slightly. 
+    If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source. 
+    Note that in that case, it should be higher than your motor current limit + current limit margin.
+
+
 Hoverboard Motor Configuration
 -------------------------------------------------------------------------------
 

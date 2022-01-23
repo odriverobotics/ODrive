@@ -528,7 +528,7 @@ measured in seconds. Set
 to turn on this feature.
 
 The watchdog is fed using the :code:`axis.watchdog_feed()` method of each axis. 
-Some :ref:`ascii commands <acsii-cmd-ref>` feed the watchdog automatically.
+Some :ref:`ascii commands <acsii-cmd-ref>` and most CANSimple commands feed the watchdog automatically.
 
 What's next?
 --------------------------------------------------------------------------------

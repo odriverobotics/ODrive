@@ -372,39 +372,18 @@ The latest official release (0.10.0 as of Nov 2020) doesn't support the STM32F72
 
 Documentation
 --------------------------------------------------------------------------------
-.. admonition:: TODO 
+.. admonition:: In Progress 
 
-  **Documentation refactor in progress, changing significantly**
+  ODrive documentation is now built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_.
 
-  * prerequisites
+  * Prerequisites:
+
     * Install Sphinx: :code:`pip install -U sphinx`
     * Install packages: :code:`pip install sphinx-copybutton sphinx-panels sphinx-rtd-theme`
-    
+
+
   * Run :code:`make html` within the :kbd:`./docs/reStructuredText` folder 
   * Open :kbd:`./docs/reStructuredText/_build/index.html` to view
-  
-.. All `*.md` files in the `docs/` directory of the master branch are served up by GitHub Pages on `this domain <https://docs.odriverobotics.com>`__.
-
-..  * Theme: `minimal https://github.com/pages-themes/minimal>`__ by `orderedlist](https://github.com/orderedlist)
-..  * HTML layout: `docs/_layouts/default.html`
-..  * CSS style: `docs/assets/css/styles.scss`
-..  * Site index: `docs/_data/index.yaml`
-
-.. To run the docs server locally:
-
-.. ```bash
-.. cd docs
-.. gem install bundler # The gem command typically comes with a Ruby installation
-.. #export PATH="$PATH:~/.gem/ruby/2.7.0/bin" # or similar (depends on OS)
-.. rm Gemfile.lock # only if below commands cause trouble
-.. bundle config path ruby-bundle
-.. bundle install
-.. mkdir -p _api _includes
-.. python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_documentation_template.j2 --outputs _api/'#'.md && python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_index_template.j2 --output _includes/apiindex.html
-.. bundle exec jekyll serve --incremental --host=0.0.0.0
-.. ```
-
-.. On Ubuntu 18.04, prerequisites are: `ruby ruby-dev zlib1g-dev`.
 
 .. _modifying-libfibre:
 
