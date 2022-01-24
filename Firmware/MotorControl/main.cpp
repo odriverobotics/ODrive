@@ -400,6 +400,13 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         odrv.oscilloscope_.update();
     }
 
+    for (auto& axis : axes) {
+        MEASURE_TIME(axis.task_times_.endstop_update) {
+            axis.min_endstop_.update();
+            axis.max_endstop_.update();
+        }
+    }
+
     MEASURE_TIME(task_times_.control_loop_checks) {
         for (auto& axis: axes) {
             // look for errors at axis level and also all subcomponents
@@ -431,11 +438,6 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
     for (auto& axis: axes) {
         MEASURE_TIME(axis.task_times_.sensorless_estimator_update)
             axis.sensorless_estimator_.update();
-
-        MEASURE_TIME(axis.task_times_.endstop_update) {
-            axis.min_endstop_.update();
-            axis.max_endstop_.update();
-        }
 
         MEASURE_TIME(axis.task_times_.controller_update)
             axis.controller_.update(); // uses position and velocity from encoder

@@ -421,6 +421,10 @@ bool Axis::run_homing() {
     controller_.pos_setpoint_ = pos_estimate_local.value();
     controller_.vel_setpoint_ = 0.0f;
     controller_.input_pos_updated();
+
+    // Synchronization issue.  Ensure trajectory_done is false prior to the while loop, so that
+    // the controller has time to run move_to_pos() on the next update()
+    controller_.trajectory_done_ = false; 
     
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !(done = controller_.trajectory_done_)) {
         osDelay(1);
