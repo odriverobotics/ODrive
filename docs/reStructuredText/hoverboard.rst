@@ -248,7 +248,7 @@ Hopefully you got your motor to spin! Feel free to repeat all of the above for t
 PWM Input
 -------------------------------------------------------------------------------
 
-If you want to drive your hoverboard wheels around with an RC remote control you can use the :ref: `RC PWM input <rc-pwm>`. There is more information in that link.
+If you want to drive your hoverboard wheels around with an RC remote control you can use the :ref:`RC PWM input <rc-pwm>`. There is more information in that link.
 Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
