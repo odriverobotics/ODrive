@@ -477,13 +477,12 @@ void LegacyCallContext::resume_from_protocol(EndpointOperationResult result) {
         auto continuation = get_next_task(res);
         if (continuation.index() == 0) {
             auto app_result = callback.invoke(std::get<0>(continuation));
-            if (!app_result.has_value()) {
-                return; // app will resume asynchronously
-            } else if (std::get<0>(continuation).status != kFibreOk) {
-                if (app_result->status != kFibreClosed || app_result->rx_buf.size() || app_result->tx_buf.size()) {
+            if (std::get<0>(continuation).status != kFibreOk) {
+                if (app_result.has_value() && (app_result->status != kFibreClosed || app_result->rx_buf.size() || app_result->tx_buf.size())) {
                     FIBRE_LOG(W) << "app tried to continue a closed call";
                 }
                 FIBRE_LOG(T) << "closing call";
+                delete this;
                 return;
             } else {
                 res = *app_result;
