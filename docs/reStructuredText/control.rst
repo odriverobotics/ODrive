@@ -31,11 +31,10 @@ Position Control Loop
 --------------------------------------------------------------------------------
 The position controller is a P loop with a single proportional gain,
 
- .. math::
+ .. code::
 
-    \text{pos_error} &= \text{pos_setpoint} - \text{pos_feedback},
-
-    \text{vel_cmd} &= \text{pos_error} * \text{pos_gain} + \text{vel_feedforward}.
+    pos_error = pos_setpoint - pos_feedback,
+      vel_cmd = pos_error * pos_gain + vel_feedforward.
 
 
 Velocity Control Loop
@@ -43,13 +42,11 @@ Velocity Control Loop
 
 The velocity controller is a PI loop where
 
- .. math::
+ .. code::
 
-    \text{vel_error} &= \text{vel_cmd} - \text{vel_feedback},
-     
-    \text{current_integral} &+= \text{vel_error} * \text{vel_integrator gain},
-
-    \text{current_cmd} &= \text{vel_error} * \text{vel_gain} + \text{current_integral} + \text{current_feedforward}.
+            vel_error = vel_cmd - vel_feedback,   
+    current_integral += vel_error * vel_integrator gain,
+          current_cmd = vel_error * vel_gain + current_integral + current_feedforward.
 
 
 Current Control Loop
@@ -57,15 +54,12 @@ Current Control Loop
 
 The current controller is also a PI loop, 
 
- .. math::
+ .. code::
 
-    \text{current_error} &= \text{current_cmd} - \text{current_feedback},
-
-    \text{voltage_integral} &+= \text{current_error} * \text{current_integrator gain},
-
-    \text{voltage_cmd} &= \text{current_error} * \text{current_gain} + \text{voltage_integral} + ...
-    
-    & ... + \text{voltage_feedforward} \textbf{  (when we have motor model)}.
+        current_error = current_cmd - current_feedback,
+    voltage_integral += current_error * current_integrator gain,
+          voltage_cmd = current_error * current_gain + voltage_integral + ...  
+                  ... + voltage_feedforward (when we have motor model).
 
 .. note:: 
     `current_gain` and `current_integrator_gain` are automatically set according to :code:`motor.config.current_control_bandwidth`

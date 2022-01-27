@@ -16,7 +16,7 @@ ODrive v3.x Pinout
 .. ODrive v3.x
 .. --------------------------------------------------------------------------------
 
-.. csv-table:: Table Title
+.. csv-table:: Pinout Table
    :file: figures/pinout.csv
    :header-rows: 1
 
@@ -30,7 +30,7 @@ Notes
 --------------------------------------------------------------------------------
 
 * Changes to the pin configuration only take effect after :code:`odrv0.save_configuration()` and :code:`odrv0.reboot()`
-* Bold font marks the default configuration.
+* **Bold font** marks the default configuration.
 * If a GPIO is set to an unsupported mode it will be left uninitialized.
 * When setting a GPIO to a special purpose mode (e.g. :code:`GPIO_MODE_UART_A`) you must also enable the corresponding feature (e.g. :code:`<odrv>.config.enable_uart_a`).
 * Digital mode is a general purpose mode that can be used for these functions: step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS.

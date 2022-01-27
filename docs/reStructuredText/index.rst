@@ -3,11 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. include:: getting-started.rst
+================================================================================
+ODrive Documentation
+================================================================================
 
+Welcome to the ODrive V3.6 documentation homepage!
+
+This project strives to bring high performance motor control to makers, all of the source code is 
+open source and available on github `here. <https://github.com/odriverobotics/ODrive>`__
+
+.. note::
+
+   This documentation is specifically for V3.6, for ODrive Pro Beta click `here. <https://betadocs.odriverobotics.com/>`__
+
+`ODrive Robotics homepage. <https://odriverobotics.com/>`__
+
+Table of Contents
+--------------------------------------------------------------------------------
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
    :caption: General
 
@@ -22,7 +36,6 @@
    ground-loops
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
    :caption: Tutorials
 
@@ -32,7 +45,6 @@
 
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
    :caption: Interfaces and Protocols
    
@@ -55,7 +67,6 @@
    
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
    :caption: For ODrive Developers
 
