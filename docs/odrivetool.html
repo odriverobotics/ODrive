@@ -1,0 +1,1089 @@
+
+
+
+<!DOCTYPE html>
+<!-- source: https://github.com/pages-themes/minimal/blob/master/_layouts/default.html -->
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>ODrive Tool | ODrive</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="ODrive Tool" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="High performance motor control" />
+<meta property="og:description" content="High performance motor control" />
+<meta property="og:site_name" content="ODrive" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ODrive Tool" />
+<script type="application/ld+json">
+{"headline":"ODrive Tool","description":"High performance motor control","url":"/odrivetool.html","@type":"WebPage","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=1884d15497a7763c369624915a3b9adc24cd6eb7">
+    <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div>
+          <h1><a href="/">ODrive Documentation</a></h1>
+
+          
+
+          <p>High performance motor control</p>
+        </div>
+        <div style="overflow-y: auto;">
+          <ul id="navbar">
+            
+            <li class="navgroup">
+              <p class="navheader">General</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/" alt="Getting Started">Getting Started</a></li>
+                
+                
+                
+                
+                <li><a class="navitem currentitem" href="/odrivetool" alt="ODrive Tool">ODrive Tool</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control-modes" alt="Control Modes">Control Modes</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/commands" alt="Parameters & Commands">Parameters & Commands</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/encoders" alt="Encoders">Encoders</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control" alt="Control Structure & Tuning">Control Structure & Tuning</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/troubleshooting" alt="Troubleshooting">Troubleshooting</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/specifications" alt="Specifications">Specifications</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ground-loops" alt="Ground Loops">Ground Loops</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Tutorials</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/hoverboard" alt="Hoverboard Guide">Hoverboard Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/migration" alt="Migration Guide">Migration Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-guide" alt="CAN Guide">CAN Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Interfaces & Protocols</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/pinout" alt="Pinout">Pinout</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/usb" alt="USB">USB</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/uart" alt="UART">UART</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/native-protocol" alt="Native Protocol">Native Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ascii-protocol" alt="ASCII Protocol">ASCII Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-protocol" alt="CAN Protocol">CAN Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/step-direction" alt="Step & Direction">Step & Direction</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/rc-pwm" alt="RC PWM">RC PWM</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/analog-input" alt="Analog Input">Analog Input</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/endstops" alt="Homing & Endstops">Homing & Endstops</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/thermistors" alt="Thermistors">Thermistors</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">API Reference</p>
+              <ul>
+                
+                
+
+
+<li>
+
+  <input id="chk-ODrive" type="checkbox"  hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive" class="chevron"></label>
+    <a href="/api/odrive">ODrive</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.config">Config</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Can" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Can" class="chevron"></label>
+        <a href="/api/odrive.can">Can</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.protocol">Protocol</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.endpoint">Endpoint</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Axis" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Axis" class="chevron"></label>
+        <a href="/api/odrive.axis">Axis</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.lockinconfig">LockinConfig</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.canconfig">CanConfig</a>
+          </p>
+        </li>
+        <li>
+        
+          <input id="chk-ODrive.Axis.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Axis.Config" class="chevron"></label>
+            <a href="/api/odrive.axis.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.axis.config.calibrationlockin">CalibrationLockin</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.tasktimes">TaskTimes</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.axisstate">AxisState</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.thermistorcurrentlimiter">ThermistorCurrentLimiter</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OnboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OnboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.onboardthermistorcurrentlimiter">OnboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.onboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OffboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OffboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.offboardthermistorcurrentlimiter">OffboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.offboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Motor" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Motor" class="chevron"></label>
+        <a href="/api/odrive.motor">Motor</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.currentcontrol">CurrentControl</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.motortype">MotorType</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.oscilloscope">Oscilloscope</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.AcimEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.AcimEstimator" class="chevron"></label>
+        <a href="/api/odrive.acimestimator">AcimEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.acimestimator.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Controller" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Controller" class="chevron"></label>
+        <a href="/api/odrive.controller">Controller</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+        
+          <input id="chk-ODrive.Controller.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Controller.Config" class="chevron"></label>
+            <a href="/api/odrive.controller.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.controller.config.anticogging">Anticogging</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.autotuning">Autotuning</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.controlmode">ControlMode</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.inputmode">InputMode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Encoder" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Encoder" class="chevron"></label>
+        <a href="/api/odrive.encoder">Encoder</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.mode">Mode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SensorlessEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SensorlessEstimator" class="chevron"></label>
+        <a href="/api/odrive.sensorlessestimator">SensorlessEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.error">Error</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.TrapezoidalTrajectory" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.TrapezoidalTrajectory" class="chevron"></label>
+        <a href="/api/odrive.trapezoidaltrajectory">TrapezoidalTrajectory</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.trapezoidaltrajectory.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Endstop" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Endstop" class="chevron"></label>
+        <a href="/api/odrive.endstop">Endstop</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.endstop.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.MechanicalBrake" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.MechanicalBrake" class="chevron"></label>
+        <a href="/api/odrive.mechanicalbrake">MechanicalBrake</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.mechanicalbrake.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimer">TaskTimer</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimes">TaskTimes</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SystemStats" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SystemStats" class="chevron"></label>
+        <a href="/api/odrive.systemstats">SystemStats</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.usb">Usb</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.i2c">I2C</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.error">Error</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.gpiomode">GpioMode</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.streamprotocoltype">StreamProtocolType</a>
+      </p>
+    </li>
+  </ul>
+</li>
+<li>
+
+  <input id="chk-ODrive3" type="checkbox"  hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive3" class="chevron"></label>
+    <a href="/api/odrive3">ODrive3</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive3.config">Config</a>
+      </p>
+    </li>
+
+  </ul>
+</li>
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">For ODrive Developers</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/developer-guide" alt="Firmware Developer Guide">Firmware Developer Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-vscode" alt="Configuring Visual Studio Code">Configuring Visual Studio Code</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-eclipse" alt="Configuring Eclipse">Configuring Eclipse</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Component Guides</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y" alt="Motor Guide">Motor Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU" alt="Encoder Guide">Encoder Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+          </ul>
+        </div>
+        <div style="margin-top: 10px;">
+          
+          <p class="view"><a href="https://github.com/odriverobotics/ODrive">View the Project on GitHub <small>odriverobotics/ODrive</small></a></p>
+          
+
+          
+          
+          <p>Help improve these docs: submit edits using the link in the top right.</p>
+          <p>If you need help, please search or ask the <a href=https://discourse.odriverobotics.com>ODrive Community</a>.</p>
+
+          
+        </div>
+      </header>
+      <section>
+
+        <div class="pageactions">
+          <div>
+            <!-- edit icon taken from GitHub -->
+            <svg transform="translate(0,1)" class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="10" height="12" aria-hidden="true">
+              <path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 0 1 1.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"></path>
+            </svg>
+            
+            <a href="https://www.github.com/madcowswe/ODrive/edit/master/docs/odrivetool.md">edit on GitHub</a>
+          </div>
+
+          
+        </div>
+
+
+      <h1 id="odrive-tool">ODrive Tool</h1>
+
+<p>The ODrive Tool is the accompanying PC program for the ODrive. It’s main purpose is to provide an interactive shell to control the device manually, as well as some supporting functions like firmware update.</p>
+
+<h3 id="table-of-contents">Table of contents</h3>
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#multiple-odrives">Multiple ODrives</a></li>
+  <li><a href="#configuration-backup">Configuration Backup</a></li>
+  <li><a href="#device-firmware-update">Device Firmware Update</a></li>
+  <li><a href="#flashing-with-an-stlink">Flashing with an STLink</a></li>
+  <li><a href="#liveplotter">Liveplotter</a></li>
+</ul>
+
+<!-- /TOC -->
+
+<h2 id="installation">Installation</h2>
+
+<p>Refer to the <a href="getting-started#downloading-and-installing-tools">Getting Started guide</a>.</p>
+
+<p>Type <code class="language-plaintext highlighter-rouge">odrivetool --help</code> to see what features are available.</p>
+
+<h2 id="multiple-odrives">Multiple ODrives</h2>
+
+<p>By default, <code class="language-plaintext highlighter-rouge">odrivetool</code> will connect to any ODrive it finds. If this is not what you want, you can select a specific ODrive.</p>
+
+<p>To find the serial number of your ODrive, run <code class="language-plaintext highlighter-rouge">odrivetool</code>, connect exactly one ODrive and power it up. You should see this:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Connected to ODrive 306A396A3235 as odrv0
+In [1]:
+</code></pre></div></div>
+<p><code class="language-plaintext highlighter-rouge">306A396A3235</code> is the serial number of this particular ODrive. If you want ODrive Tool to ignore all other devices you would close it and then run <code class="language-plaintext highlighter-rouge">odrivetool --serial-number 306A396A3235</code>.</p>
+
+<details><summary>My ODrive is stuck in DFU mode, can I still find the serial number?</summary><div>
+    <p>Yes, the serial number is part of the USB descriptors.</p>
+
+    <p>In Linux you can find it by running:</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ (sudo lsusb -d 1209:0d32 -v; sudo lsusb -d 0483:df11 -v) 2&gt;/dev/null | grep iSerial
+  iSerial                 3 385F324D3037
+  iSerial                 3 306A396A3235
+</code></pre></div>    </div>
+    <p>Here, two ODrives are connected.</p>
+  </div></details>
+
+<h2 id="configuration-backup">Configuration Backup</h2>
+
+<p>You can use ODrive Tool to back up and restore device configurations or transfer the configuration of one ODrive to another one.</p>
+
+<ul>
+  <li>To save the configuration to a file on the PC, run <code class="language-plaintext highlighter-rouge">odrivetool backup-config my_config.json</code>.</li>
+  <li>To restore the configuration form such a file, run <code class="language-plaintext highlighter-rouge">odrivetool restore-config my_config.json</code>.</li>
+</ul>
+
+<p>Note that encoder offset calibration is not restored because this would be dangerous if you transfer the calibration values of one axis to another axis.</p>
+
+<h2 id="device-firmware-update">Device Firmware Update</h2>
+
+<div class="note"><strong>ODrive v3.4 or earlier</strong>: DFU is not supported on these devices. You need to <a href="#flashing-with-an-stlink">flash with the external programmer</a> instead.</div>
+
+<p>To update the ODrive to the newest firmware release, simply open up a terminal and run the following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~ $ odrivetool dfu
+ODrive control utility v0.3.7.dev
+Waiting for ODrive...
+Found ODrive 308039673235 (v3.5-24V) with firmware v0.3.7-dev
+Checking online for newest firmware... found v0.3.7
+Downloading firmware...
+Putting device 308039673235 into DFU mode...
+Erasing... done            
+Flashing... done            
+Verifying... done            
+</code></pre></div></div>
+
+<p>Note that this command will connect to GitHub servers to retrieve the latest firmware.</p>
+
+<p>If you have a non-default configuration saved on the device, ODrive Tool will try to carry over the configuration across the firmware update. If any of the settings are removed or renamed, you will get warning messages.</p>
+
+<details><summary>How to flash a custom firmware</summary><div>
+    <p>If you want to flash a specific firmware file instead of automatically downloading one, you can run <code class="language-plaintext highlighter-rouge">odrivetool dfu path/to/firmware/file.hex</code></p>
+
+    <p>You can download one of the officially released firmware files from <a href="https://github.com/madcowswe/ODrive/releases">here</a>. You will need one of the <strong>.hex</strong> files (not the <strong>.elf</strong> file). Make sure you select the file that matches your board version.</p>
+
+    <p>To compile firmware from source, refer to the <a href="developer-guide">developer guide</a>.</p>
+  </div></details>
+
+<h3 id="troubleshooting">Troubleshooting</h3>
+
+<ul>
+  <li><strong>Windows</strong>: During the update, a new device called “STM32 BOOTLOADER” will appear. Open the <a href="http://zadig.akeo.ie/">Zadig utility</a> and set the driver for “STM32 BOOTLOADER” to libusb-win32. After that the firmware update will continue.</li>
+  <li><strong>Linux</strong>: Try running <code class="language-plaintext highlighter-rouge">sudo odrivetool dfu</code> instead of <code class="language-plaintext highlighter-rouge">odrivetool dfu</code>.</li>
+  <li>On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.</li>
+  <li>
+    <p>If the DFU script can’t find the device, try forcing it into DFU mode.</p>
+
+    <details><summary>How to force DFU mode (ODrive v3.5 and newer)</summary><div>
+        <p>Flick the DIP switch that says “DFU, RUN” to “DFU” and power cycle the board. If that alone doesn’t work, also connect the pin “GPIO6” to “GND”. After you’re done upgrading firmware, don’t forget to put the switch back into the “RUN” position and power cycle the board again.</p>
+      </div></details>
+
+    <details><summary>How to force DFU mode (ODrive v3.1, v3.2)</summary><div>
+        <p>Connect the pin “BOOT0” to “3.3V” and power cycle the board. If that alone doesn’t work, also connect the pin “GPIO1” to “GND”. After you’re done, remove the wires and power cycle the board again.</p>
+      </div></details>
+  </li>
+</ul>
+
+<h3 id="upgrading-firmware-with-a-different-dfu-tool">Upgrading firmware with a different DFU tool</h3>
+<p>Some people have had issues using the python dfu tool, so below is a guide on how to manually use different tools.</p>
+
+<p>Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from <a href="https://github.com/madcowswe/ODrive/releases/latest">here</a>. Make sure you select the file that matches your board version. On Windows you will need one of the <strong>.hex</strong> files, and for Linux and Mac you will want the <strong>.elf</strong> file.</p>
+
+<p>To compile firmware from source, refer to the <a href="developer-guide">developer guide</a>.</p>
+
+<h4 id="multi-platform">Multi-platform</h4>
+<p>ST has a tool called STM32CubeProgrammer.</p>
+
+<ol>
+  <li>Download the tool <a href="https://www.st.com/en/development-tools/stm32cubeprog.html">here</a>. You will need to make an account with ST to download the tool.</li>
+  <li>Install the tool. On Windows, make sure to let it make a desktop shortcut.</li>
+  <li>Force the ODrive into DFU mode, as per the instructions above titled “How to force DFU mode”.</li>
+  <li>Launch the tool.</li>
+  <li>Under “Memory &amp; File edition”, there are two tabs called “Device memory” and “Open file”. Click “Open file” and choose the ODrive firmware hex file that you downloaded or compiled.</li>
+  <li>In the top right, there is a dropdown menu containing the different methods to connect to an STM32 device. Choose “USB”.</li>
+  <li>Under “USB configuration”, a USB port should be automatically selected and the ODrive serial number should be present next to “Serial number.”</li>
+  <li>Click “Connect” above “USB configuration”.</li>
+  <li>Click the tab with the name of your firmware file (example: ODriveFirmware_v3.6-56V.hex) if it is not already selected.</li>
+  <li>Click “Download” to flash your ODrive with the firmware. Your ODrive is now flashed!</li>
+  <li>Close STM32CubeProgrammer.</li>
+  <li>Turn off the power to the ODrive and set the DIP swtich back to RUN mode.</li>
+</ol>
+
+<h4 id="windows">Windows</h4>
+<p>You can use the DfuSe app from ST.</p>
+
+<ol>
+  <li>Download the tool <a href="https://www.st.com/en/development-tools/stsw-stm32080.html">here</a>. Unfortunately they make you create a login to download. Sorry about that.</li>
+  <li>After installing the tool, launch <code class="language-plaintext highlighter-rouge">DfuFileMgr.exe</code> which probably got added to the start menu as “Dfu file manager”.</li>
+  <li>Select “I want to GENERATE a DFU file from S19, HEX or BIN files”, press OK.</li>
+  <li>Click the button that says “S19 or Hex…”, find the <code class="language-plaintext highlighter-rouge">ODriveFirmware.hex</code> file you built or downloaded.</li>
+  <li>Leave all the other settings as default and click the “Generate…” button.</li>
+  <li>Save the output file as <code class="language-plaintext highlighter-rouge">ODriveFirmware.dfu</code>. Note that the success message has a warning sign for some reason…</li>
+  <li>Launch <code class="language-plaintext highlighter-rouge">DfuSeDemo.exe</code> which probably got added to the start menu as “DfuSeDemo”.</li>
+  <li>Force the ODrive into DFU mode, as per the instructions above “How to force DFU mode”.</li>
+  <li>In the top left it should now be connected to “STM Device in DFU Mode”.
+    <ol>
+      <li>If it doesn’t appear, it may be because the driver is set to libusb by Zadig. We need to set it back to the original driver. Follow <a href="https://github.com/pbatard/libwdi/wiki/FAQ#Help_Zadig_replaced_the_driver_for_the_wrong_device_How_do_I_restore_it">these instructions</a>.</li>
+      <li>If, after doing the above step, the ODrive still installs itself as a libusb device in Device Manager, you can try to delete the libusb driver (this is OK, since we can use Zadig to install it again). You can simply delete the file <code class="language-plaintext highlighter-rouge">C:\Windows\System32\drivers\libusb0.sys</code>.</li>
+    </ol>
+  </li>
+  <li>In the bottom right section called “Upgrade or Verify Action” click the button “Choose…”.</li>
+  <li>Locate the <code class="language-plaintext highlighter-rouge">ODriveFirmware.dfu</code> we made before.</li>
+  <li>Click button “Upgrade”.</li>
+  <li>If you get a warning that it’s not possible to check that it’s the correct device type: click yes to continue.</li>
+  <li>Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.</li>
+  <li>Turn off the power to the ODrive and set the DIP switch back to RUN mode.</li>
+</ol>
+
+<h4 id="linux">Linux</h4>
+<p>Install <code class="language-plaintext highlighter-rouge">dfu-util</code>:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt install dfu-util
+</code></pre></div></div>
+
+<p>Force DFU mode, as per the instructions above.
+In the Firmware directory, after finishing building the firmware:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
+</code></pre></div></div>
+
+<h4 id="macos">macOS</h4>
+
+<p>First, you need to install the arm development tools to copy the binary into the appropriate format.</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ brew install --cask gcc-arm-embedded
+</code></pre></div></div>
+
+<p>Then convert the binary to .bin format</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ arm-none-eabi-objcopy -O binary ODriveFirmware_v3.5-48V.elf ODriveFirmware_v3.5-48V.bin
+</code></pre></div></div>
+
+<p>Install <code class="language-plaintext highlighter-rouge">dfu-util</code>:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
+</code></pre></div></div>
+
+<p>Put the ODrive into DFU mode using the DIP switch, then turn it on and plug in the USB.
+Find the correct device serial number to use:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ dfu-util --list              # list the DFU capable devices
+[...]
+Found DFU: [0483:df11] ver=2200, devnum=5, cfg=1, intf=0, path="20-2", alt=0, 
+ name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg", serial="388237123123"
+</code></pre></div></div>
+
+<p>Finally, flash the firmware using the found serial number:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo dfu-util -S 388237123123 -a 0 -s 0x08000000 -D ODriveFirmware_v3.5-48V.bin
+</code></pre></div></div>
+
+<h2 id="flashing-with-an-stlink">Flashing with an STLink</h2>
+
+<p>This procedure is only necessary for ODrive v3.4 or earlier. You will need an STLink/v2 or compatible programmer. You should have received one with your ODrive.</p>
+
+<ol>
+  <li>Install OpenOCD
+    <ul>
+      <li><strong>Windows:</strong> <a href="http://gnuarmeclipse.github.io/openocd/install/">instructions</a> (also follow the instructions on the ST-LINK/V2 drivers)</li>
+      <li><strong>Linux:</strong> <code class="language-plaintext highlighter-rouge">sudo apt-get install openocd</code></li>
+      <li><strong>macOS:</strong> <code class="language-plaintext highlighter-rouge">brew install openocd</code></li>
+    </ul>
+  </li>
+  <li>Download the latest firmware release form <a href="https://github.com/madcowswe/ODrive/releases">here</a>. You will need the <strong>.elf</strong> file. Make sure you select the file that matches your board version.</li>
+  <li>Wire up the ODrive and STLink/v2 programmer as shown in this picture:<br />
+  <img src="/stlink-wiring-cropped.jpg" alt="stlink-wiring" />
+  Power up the ODrive.</li>
+  <li>Open up a terminal and navigate to the directory where the firmware is.</li>
+  <li>Run the following command (replace <code class="language-plaintext highlighter-rouge">ODriveFirmware_v3.4-24V.elf</code> with the name of your firmware file):
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c "reset halt" -c "flash write_image erase ODriveFirmware_v3.4-24V.elf" -c "reset run" -c exit
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>If everything worked correctly, you should see something similar to this towards the end of the printout:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wrote 262144 bytes from file ODriveFirmware_v3.4-24V.elf in 10.194110s (25.113 KiB/s)
+</code></pre></div></div>
+
+<p>If something doesn’t work, make sure <code class="language-plaintext highlighter-rouge">openocd</code> is in your <code class="language-plaintext highlighter-rouge">PATH</code> variable, check that the wires are connected properly and try with elevated privileges.</p>
+
+<h2 id="liveplotter">Liveplotter</h2>
+
+<p>Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run <code class="language-plaintext highlighter-rouge">odrivetool liveplotter</code> from a new anaconda prompt window. By default two parameters are plotted on startup; the encoder position of axis 1 and axis 2. In the below example the motors are running in <code class="language-plaintext highlighter-rouge">closed_loop_control</code> while they are being forced off position by hand.</p>
+
+<p><img src="/figure_1.png" alt="Liveplotter position plot" /></p>
+
+<p>To change what parameters are plotted open odrivetool (located in Anaconda3\Scripts or ODrive-master\tools) with a text editor and modify the liveplotter function:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
+        ])
+</code></pre></div></div>
+<p>For example, to plot the approximate motor torque [Nm] and the velocity [RPM] of axis0, you would modify the function to read:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            ((my_odrive.axis0.encoder.vel_estimate*60), # turns/s to rpm
+            ((my_odrive.axis0.motor.current_control.Iq_setpoint * my_odrive.axis0.motor.config.torque_constant), # Torque [Nm]
+        ])
+</code></pre></div></div>
+<p>In the example below the motor is forced off axis by hand and held there. In response the motor controller increases the torque (orange line) to counteract this disturbance up to a peak of 500 N.cm at which point the motor current limit is reached. When the motor is released it returns back to its commanded position very quickly as can be seen by the spike in the motor velocity (blue line).</p>
+
+<p><img src="/figure_1-1.png" alt="Liveplotter torque vel plot" /></p>
+
+<p>To change the scale and sample rate of the plot modify the following parameters located at the beginning of utils.py (located in Anaconda3\Lib\site-packages\odrive):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>data_rate = 100
+plot_rate = 10
+num_samples = 1000
+</code></pre></div></div>
+
+<p>For more examples on how to interact with the plotting functionality refer to the <a href="https://matplotlib.org/examples">Matplotlib examples.</a></p>
+
+<h3 id="liveplotter-from-interactive-odrivetool-instance">Liveplotter from interactive odrivetool instance</h3>
+<p>You can also run <code class="language-plaintext highlighter-rouge">start_liveplotter(...)</code> directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.</p>
+
+<p>For example you can type the following directly into the interactive prompt: <code class="language-plaintext highlighter-rouge">start_liveplotter(lambda: [odrv0.axis0.encoder.pos_estimate])</code>. Just like the examples above, you can list several parameters to plot separated by comma in the square brackets.
+In general, you can plot any variable that you are able to read like normal in odrivetool.</p>
+
+
+
+      </section>
+      <!--<footer>
+        
+        <p>This project is maintained by <a href="https://github.com/odriverobotics">odriverobotics</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>-->
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-93396600-3', 'auto');
+      ga('send', 'pageview');
+    </script>
+    
+    <script type="text/javascript">
+      // Rewrite all links that start with "../" to point to the GitHub repo
+      window.onload = function(){
+        var links = document.links;
+        var i = links.length;
+        while (i--) {
+          if (links[i].getAttribute("href").slice(0, 3) == "../") {
+            links[i].href = "https://github.com/madcowswe/ODrive/blob/master/" + links[i].getAttribute("href").slice(3);
+          }
+          if (links[i].getAttribute("href").slice(0, 15) == "getting-started") {
+            links[i].href = "/" + links[i].getAttribute("href").slice(15);
+          }
+        }
+      }
+    </script>
+    <script>
+      // Scroll the navbar to the position of the selected item
+      var element = document.getElementsByClassName("currentitem")[0];
+      element.scrollIntoView(false);
+    </script>
+  </body>
+</html>
+

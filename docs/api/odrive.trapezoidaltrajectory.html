@@ -1,0 +1,846 @@
+
+
+
+<!DOCTYPE html>
+<!-- source: https://github.com/pages-themes/minimal/blob/master/_layouts/default.html -->
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>ODrive.TrapezoidalTrajectory | ODrive</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="ODrive.TrapezoidalTrajectory" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="ODrive 〉TrapezoidalTrajectory" />
+<meta property="og:description" content="ODrive 〉TrapezoidalTrajectory" />
+<meta property="og:site_name" content="ODrive" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-01-28T19:34:58+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ODrive.TrapezoidalTrajectory" />
+<script type="application/ld+json">
+{"headline":"ODrive.TrapezoidalTrajectory","dateModified":"2022-01-28T19:34:58+00:00","datePublished":"2022-01-28T19:34:58+00:00","description":"ODrive 〉TrapezoidalTrajectory","url":"/api/odrive.trapezoidaltrajectory.html","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"/api/odrive.trapezoidaltrajectory.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=1884d15497a7763c369624915a3b9adc24cd6eb7">
+    <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div>
+          <h1><a href="/">ODrive Documentation</a></h1>
+
+          
+
+          <p>High performance motor control</p>
+        </div>
+        <div style="overflow-y: auto;">
+          <ul id="navbar">
+            
+            <li class="navgroup">
+              <p class="navheader">General</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/" alt="Getting Started">Getting Started</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/odrivetool" alt="ODrive Tool">ODrive Tool</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control-modes" alt="Control Modes">Control Modes</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/commands" alt="Parameters & Commands">Parameters & Commands</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/encoders" alt="Encoders">Encoders</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control" alt="Control Structure & Tuning">Control Structure & Tuning</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/troubleshooting" alt="Troubleshooting">Troubleshooting</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/specifications" alt="Specifications">Specifications</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ground-loops" alt="Ground Loops">Ground Loops</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Tutorials</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/hoverboard" alt="Hoverboard Guide">Hoverboard Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/migration" alt="Migration Guide">Migration Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-guide" alt="CAN Guide">CAN Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Interfaces & Protocols</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/pinout" alt="Pinout">Pinout</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/usb" alt="USB">USB</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/uart" alt="UART">UART</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/native-protocol" alt="Native Protocol">Native Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ascii-protocol" alt="ASCII Protocol">ASCII Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-protocol" alt="CAN Protocol">CAN Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/step-direction" alt="Step & Direction">Step & Direction</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/rc-pwm" alt="RC PWM">RC PWM</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/analog-input" alt="Analog Input">Analog Input</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/endstops" alt="Homing & Endstops">Homing & Endstops</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/thermistors" alt="Thermistors">Thermistors</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">API Reference</p>
+              <ul>
+                
+                
+
+
+<li>
+
+  <input id="chk-ODrive" type="checkbox" checked hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive" class="chevron"></label>
+    <a href="/api/odrive">ODrive</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.config">Config</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Can" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Can" class="chevron"></label>
+        <a href="/api/odrive.can">Can</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.protocol">Protocol</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.endpoint">Endpoint</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Axis" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Axis" class="chevron"></label>
+        <a href="/api/odrive.axis">Axis</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.lockinconfig">LockinConfig</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.canconfig">CanConfig</a>
+          </p>
+        </li>
+        <li>
+        
+          <input id="chk-ODrive.Axis.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Axis.Config" class="chevron"></label>
+            <a href="/api/odrive.axis.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.axis.config.calibrationlockin">CalibrationLockin</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.tasktimes">TaskTimes</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.axisstate">AxisState</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.thermistorcurrentlimiter">ThermistorCurrentLimiter</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OnboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OnboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.onboardthermistorcurrentlimiter">OnboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.onboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OffboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OffboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.offboardthermistorcurrentlimiter">OffboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.offboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Motor" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Motor" class="chevron"></label>
+        <a href="/api/odrive.motor">Motor</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.currentcontrol">CurrentControl</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.motortype">MotorType</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.oscilloscope">Oscilloscope</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.AcimEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.AcimEstimator" class="chevron"></label>
+        <a href="/api/odrive.acimestimator">AcimEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.acimestimator.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Controller" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Controller" class="chevron"></label>
+        <a href="/api/odrive.controller">Controller</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+        
+          <input id="chk-ODrive.Controller.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Controller.Config" class="chevron"></label>
+            <a href="/api/odrive.controller.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.controller.config.anticogging">Anticogging</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.autotuning">Autotuning</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.controlmode">ControlMode</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.inputmode">InputMode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Encoder" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Encoder" class="chevron"></label>
+        <a href="/api/odrive.encoder">Encoder</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.mode">Mode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SensorlessEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SensorlessEstimator" class="chevron"></label>
+        <a href="/api/odrive.sensorlessestimator">SensorlessEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.error">Error</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.TrapezoidalTrajectory" type="checkbox"  hidden />
+      <p class="navitem currentitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.TrapezoidalTrajectory" class="chevron"></label>
+        <a href="/api/odrive.trapezoidaltrajectory">TrapezoidalTrajectory</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.trapezoidaltrajectory.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Endstop" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Endstop" class="chevron"></label>
+        <a href="/api/odrive.endstop">Endstop</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.endstop.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.MechanicalBrake" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.MechanicalBrake" class="chevron"></label>
+        <a href="/api/odrive.mechanicalbrake">MechanicalBrake</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.mechanicalbrake.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimer">TaskTimer</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimes">TaskTimes</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SystemStats" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SystemStats" class="chevron"></label>
+        <a href="/api/odrive.systemstats">SystemStats</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.usb">Usb</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.i2c">I2C</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.error">Error</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.gpiomode">GpioMode</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.streamprotocoltype">StreamProtocolType</a>
+      </p>
+    </li>
+  </ul>
+</li>
+<li>
+
+  <input id="chk-ODrive3" type="checkbox"  hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive3" class="chevron"></label>
+    <a href="/api/odrive3">ODrive3</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive3.config">Config</a>
+      </p>
+    </li>
+
+  </ul>
+</li>
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">For ODrive Developers</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/developer-guide" alt="Firmware Developer Guide">Firmware Developer Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-vscode" alt="Configuring Visual Studio Code">Configuring Visual Studio Code</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-eclipse" alt="Configuring Eclipse">Configuring Eclipse</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Component Guides</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y" alt="Motor Guide">Motor Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU" alt="Encoder Guide">Encoder Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+          </ul>
+        </div>
+        <div style="margin-top: 10px;">
+          
+          <p class="view"><a href="https://github.com/odriverobotics/ODrive">View the Project on GitHub <small>odriverobotics/ODrive</small></a></p>
+          
+
+          
+          
+          <p>Help improve these docs: submit edits using the link in the top right.</p>
+          <p>If you need help, please search or ask the <a href=https://discourse.odriverobotics.com>ODrive Community</a>.</p>
+
+          
+        </div>
+      </header>
+      <section>
+
+        <div class="pageactions">
+          <div>
+            <!-- edit icon taken from GitHub -->
+            <svg transform="translate(0,1)" class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="10" height="12" aria-hidden="true">
+              <path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 0 1 1.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"></path>
+            </svg>
+            
+            <a href="https://www.github.com/madcowswe/ODrive/edit/master/Firmware/odrive-interface.yaml">edit on GitHub</a>
+          </div>
+
+          
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="10" height="10" style="fill: #656565;">
+              <path d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/>
+            </svg>
+            <a href="https://www.github.com/madcowswe/ODrive/blob/master/Firmware/odrive-interface.yaml">download as YAML</a>
+          </div>
+          
+        </div>
+
+
+      <h1 id="odrivetrapezoidaltrajectory"><a href="odrive">ODrive</a><span style="font-size: x-large;opacity: 50%;"> 〉</span><a href="odrive.trapezoidaltrajectory">TrapezoidalTrajectory</a></h1>
+
+<h2 id="attributes">Attributes</h2>
+
+<p><a name="config"></a><span style="font-size: medium;"><strong><code>config</code></strong>  —  <code><strong><a href="odrive.trapezoidaltrajectory.config"><span>Config</span></a></strong></code></span></p>
+
+<ul>
+
+  <p><em>No description</em></p>
+</ul>
+
+<h2 id="functions">Functions</h2>
+
+<p>This interface has no functions.</p>
+
+
+
+      </section>
+      <!--<footer>
+        
+        <p>This project is maintained by <a href="https://github.com/odriverobotics">odriverobotics</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>-->
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-93396600-3', 'auto');
+      ga('send', 'pageview');
+    </script>
+    
+    <script type="text/javascript">
+      // Rewrite all links that start with "../" to point to the GitHub repo
+      window.onload = function(){
+        var links = document.links;
+        var i = links.length;
+        while (i--) {
+          if (links[i].getAttribute("href").slice(0, 3) == "../") {
+            links[i].href = "https://github.com/madcowswe/ODrive/blob/master/" + links[i].getAttribute("href").slice(3);
+          }
+          if (links[i].getAttribute("href").slice(0, 15) == "getting-started") {
+            links[i].href = "/" + links[i].getAttribute("href").slice(15);
+          }
+        }
+      }
+    </script>
+    <script>
+      // Scroll the navbar to the position of the selected item
+      var element = document.getElementsByClassName("currentitem")[0];
+      element.scrollIntoView(false);
+    </script>
+  </body>
+</html>
+

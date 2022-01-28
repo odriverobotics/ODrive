@@ -1,0 +1,1202 @@
+
+
+
+<!DOCTYPE html>
+<!-- source: https://github.com/pages-themes/minimal/blob/master/_layouts/default.html -->
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>ODrive Firmware Developer Guide | ODrive</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="ODrive Firmware Developer Guide" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="High performance motor control" />
+<meta property="og:description" content="High performance motor control" />
+<meta property="og:site_name" content="ODrive" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ODrive Firmware Developer Guide" />
+<script type="application/ld+json">
+{"headline":"ODrive Firmware Developer Guide","description":"High performance motor control","url":"/developer-guide.html","@type":"WebPage","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=1884d15497a7763c369624915a3b9adc24cd6eb7">
+    <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div>
+          <h1><a href="/">ODrive Documentation</a></h1>
+
+          
+
+          <p>High performance motor control</p>
+        </div>
+        <div style="overflow-y: auto;">
+          <ul id="navbar">
+            
+            <li class="navgroup">
+              <p class="navheader">General</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/" alt="Getting Started">Getting Started</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/odrivetool" alt="ODrive Tool">ODrive Tool</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control-modes" alt="Control Modes">Control Modes</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/commands" alt="Parameters & Commands">Parameters & Commands</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/encoders" alt="Encoders">Encoders</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/control" alt="Control Structure & Tuning">Control Structure & Tuning</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/troubleshooting" alt="Troubleshooting">Troubleshooting</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/specifications" alt="Specifications">Specifications</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ground-loops" alt="Ground Loops">Ground Loops</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Tutorials</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/hoverboard" alt="Hoverboard Guide">Hoverboard Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/migration" alt="Migration Guide">Migration Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-guide" alt="CAN Guide">CAN Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Interfaces & Protocols</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="/pinout" alt="Pinout">Pinout</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/usb" alt="USB">USB</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/uart" alt="UART">UART</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/native-protocol" alt="Native Protocol">Native Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/ascii-protocol" alt="ASCII Protocol">ASCII Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/can-protocol" alt="CAN Protocol">CAN Protocol</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/step-direction" alt="Step & Direction">Step & Direction</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/rc-pwm" alt="RC PWM">RC PWM</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/analog-input" alt="Analog Input">Analog Input</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/endstops" alt="Homing & Endstops">Homing & Endstops</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/thermistors" alt="Thermistors">Thermistors</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">API Reference</p>
+              <ul>
+                
+                
+
+
+<li>
+
+  <input id="chk-ODrive" type="checkbox"  hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive" class="chevron"></label>
+    <a href="/api/odrive">ODrive</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.config">Config</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Can" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Can" class="chevron"></label>
+        <a href="/api/odrive.can">Can</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.can.protocol">Protocol</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.endpoint">Endpoint</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Axis" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Axis" class="chevron"></label>
+        <a href="/api/odrive.axis">Axis</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.lockinconfig">LockinConfig</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.canconfig">CanConfig</a>
+          </p>
+        </li>
+        <li>
+        
+          <input id="chk-ODrive.Axis.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Axis.Config" class="chevron"></label>
+            <a href="/api/odrive.axis.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.axis.config.calibrationlockin">CalibrationLockin</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.tasktimes">TaskTimes</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.axis.axisstate">AxisState</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.thermistorcurrentlimiter">ThermistorCurrentLimiter</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OnboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OnboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.onboardthermistorcurrentlimiter">OnboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.onboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.OffboardThermistorCurrentLimiter" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.OffboardThermistorCurrentLimiter" class="chevron"></label>
+        <a href="/api/odrive.offboardthermistorcurrentlimiter">OffboardThermistorCurrentLimiter</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.offboardthermistorcurrentlimiter.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Motor" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Motor" class="chevron"></label>
+        <a href="/api/odrive.motor">Motor</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.currentcontrol">CurrentControl</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.motor.motortype">MotorType</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.oscilloscope">Oscilloscope</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.AcimEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.AcimEstimator" class="chevron"></label>
+        <a href="/api/odrive.acimestimator">AcimEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.acimestimator.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Controller" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Controller" class="chevron"></label>
+        <a href="/api/odrive.controller">Controller</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+        
+          <input id="chk-ODrive.Controller.Config" type="checkbox"  hidden />
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <label style="margin-left: 0px;" for="chk-ODrive.Controller.Config" class="chevron"></label>
+            <a href="/api/odrive.controller.config">Config</a>
+          </p>
+          <ul class="expandable-list">
+
+            <li>
+              <p class="navitem">
+                <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+                <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+                <a href="/api/odrive.controller.config.anticogging">Anticogging</a>
+              </p>
+            </li>
+
+          </ul>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.autotuning">Autotuning</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.controlmode">ControlMode</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.controller.inputmode">InputMode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Encoder" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Encoder" class="chevron"></label>
+        <a href="/api/odrive.encoder">Encoder</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.error">Error</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.encoder.mode">Mode</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SensorlessEstimator" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SensorlessEstimator" class="chevron"></label>
+        <a href="/api/odrive.sensorlessestimator">SensorlessEstimator</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.config">Config</a>
+          </p>
+        </li>
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.sensorlessestimator.error">Error</a>
+          </p>
+        </li>
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.TrapezoidalTrajectory" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.TrapezoidalTrajectory" class="chevron"></label>
+        <a href="/api/odrive.trapezoidaltrajectory">TrapezoidalTrajectory</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.trapezoidaltrajectory.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.Endstop" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.Endstop" class="chevron"></label>
+        <a href="/api/odrive.endstop">Endstop</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.endstop.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.MechanicalBrake" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.MechanicalBrake" class="chevron"></label>
+        <a href="/api/odrive.mechanicalbrake">MechanicalBrake</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.mechanicalbrake.config">Config</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimer">TaskTimer</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.tasktimes">TaskTimes</a>
+      </p>
+    </li>
+    <li>
+    
+      <input id="chk-ODrive.SystemStats" type="checkbox"  hidden />
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <label style="margin-left: 0px;" for="chk-ODrive.SystemStats" class="chevron"></label>
+        <a href="/api/odrive.systemstats">SystemStats</a>
+      </p>
+      <ul class="expandable-list">
+
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.usb">Usb</a>
+          </p>
+        </li>
+        <li>
+          <p class="navitem">
+            <a class="levelbar">&nbsp;</a><a class="levelbar">&nbsp;</a>
+            <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+            <a href="/api/odrive.systemstats.i2c">I2C</a>
+          </p>
+        </li>
+
+      </ul>
+    </li>
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.error">Error</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.gpiomode">GpioMode</a>
+      </p>
+    </li>
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive.streamprotocoltype">StreamProtocolType</a>
+      </p>
+    </li>
+  </ul>
+</li>
+<li>
+
+  <input id="chk-ODrive3" type="checkbox"  hidden />
+  <p class="navitem">
+    
+    <label style="margin-left: 0px;" for="chk-ODrive3" class="chevron"></label>
+    <a href="/api/odrive3">ODrive3</a>
+  </p>
+  <ul class="expandable-list">
+
+    <li>
+      <p class="navitem">
+        <a class="levelbar">&nbsp;</a>
+        <span style="margin-left: 7px; margin-right: 10px; float: inline-start;">&bull;</span>
+        <a href="/api/odrive3.config">Config</a>
+      </p>
+    </li>
+
+  </ul>
+</li>
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">For ODrive Developers</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem currentitem" href="/developer-guide" alt="Firmware Developer Guide">Firmware Developer Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-vscode" alt="Configuring Visual Studio Code">Configuring Visual Studio Code</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="/configuring-eclipse" alt="Configuring Eclipse">Configuring Eclipse</a></li>
+                
+                
+              </ul>
+            </li>
+            
+            <li class="navgroup">
+              <p class="navheader">Component Guides</p>
+              <ul>
+                
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y" alt="Motor Guide">Motor Guide</a></li>
+                
+                
+                
+                
+                <li><a class="navitem" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU" alt="Encoder Guide">Encoder Guide</a></li>
+                
+                
+              </ul>
+            </li>
+            
+          </ul>
+        </div>
+        <div style="margin-top: 10px;">
+          
+          <p class="view"><a href="https://github.com/odriverobotics/ODrive">View the Project on GitHub <small>odriverobotics/ODrive</small></a></p>
+          
+
+          
+          
+          <p>Help improve these docs: submit edits using the link in the top right.</p>
+          <p>If you need help, please search or ask the <a href=https://discourse.odriverobotics.com>ODrive Community</a>.</p>
+
+          
+        </div>
+      </header>
+      <section>
+
+        <div class="pageactions">
+          <div>
+            <!-- edit icon taken from GitHub -->
+            <svg transform="translate(0,1)" class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="10" height="12" aria-hidden="true">
+              <path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 0 1 1.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"></path>
+            </svg>
+            
+            <a href="https://www.github.com/madcowswe/ODrive/edit/master/docs/developer-guide.md">edit on GitHub</a>
+          </div>
+
+          
+        </div>
+
+
+      <h1 id="odrive-firmware-developer-guide">ODrive Firmware Developer Guide</h1>
+
+<p>This guide is intended for developers who wish to modify the firmware of the ODrive.
+As such it assumes that you know things like how to use Git, what a compiler is, etc. If that sounds scary, turn around now.</p>
+
+<p>The official releases are maintained on the <code class="language-plaintext highlighter-rouge">master</code> branch. However since you are a developer, you are encouraged to use the <code class="language-plaintext highlighter-rouge">devel</code> branch, as it contains the latest features.</p>
+
+<p>The project is under active development, so make sure to check the <a href="../CHANGELOG.md">Changelog</a> to keep track of updates.</p>
+
+<h3 id="table-of-contents">Table of contents</h3>
+
+<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+
+<ul>
+  <li><a href="#prerequisites">Prerequisites</a></li>
+  <li><a href="#configuring-the-build">Configuring the build</a></li>
+  <li><a href="#building-and-flashing-the-firmware">Building and flashing the Firmware</a></li>
+  <li><a href="#debugging">Debugging</a></li>
+  <li><a href="#testing">Testing</a></li>
+  <li><a href="#setting-up-an-ide">Setting up an IDE</a></li>
+  <li><a href="#stm32cubemx">STM32CubeMX</a></li>
+  <li><a href="#troubleshooting">Troubleshooting</a></li>
+  <li><a href="#documentation">Documentation</a></li>
+  <li><a href="#releases">Releases</a></li>
+  <li><a href="#notes-for-contributors">Notes for Contributors</a></li>
+</ul>
+
+<!-- /MarkdownTOC -->
+
+<p><br /><br /></p>
+<h2 id="prerequisites">Prerequisites</h2>
+
+<p>The recommended tools for ODrive development are:</p>
+
+<ul>
+  <li><strong>make</strong>: Used to invoke tup</li>
+  <li><strong>Tup</strong>: The build system used to invoke the compile commands</li>
+  <li><strong>ARM GNU Compiler</strong>: For cross-compiling code</li>
+  <li><strong>ARM GDB</strong>: For debugging the code and stepping through on the device</li>
+  <li><strong>OpenOCD</strong>: For flashing the ODrive with the STLink/v2 programmer</li>
+  <li><strong>Python 3</strong>, along with the packages <code class="language-plaintext highlighter-rouge">PyYAML</code>, <code class="language-plaintext highlighter-rouge">Jinja2</code> and <code class="language-plaintext highlighter-rouge">jsonschema</code>: For running the Python tools (<code class="language-plaintext highlighter-rouge">odrivetool</code>). Also required for compiling firmware.</li>
+</ul>
+
+<p>See below for specific installation instructions for your OS.</p>
+
+<p>Depending on what you’re gonna do, you may not need all of the components.</p>
+
+<p>Once you have everything, you can verify the correct installation by running:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>arm-none-eabi-gcc <span class="nt">--version</span>
+<span class="nv">$ </span>arm-none-eabi-gdb <span class="nt">--version</span>
+<span class="nv">$ </span>openocd <span class="nt">--version</span>             <span class="c"># should be 0.10.0 or later</span>
+<span class="nv">$ </span>tup <span class="nt">--version</span>                 <span class="c"># should be 0.7.5 or later</span>
+<span class="nv">$ </span>python <span class="nt">--version</span>              <span class="c"># should be 3.7 or later</span>
+</code></pre></div></div>
+
+<h4 id="linux-ubuntu--2004">Linux (Ubuntu &lt; 20.04)</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>add-apt-repository ppa:team-gcc-arm-embedded/ppa
+<span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>gcc-arm-embedded
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>openocd
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>git-lfs
+<span class="nb">sudo </span>add-apt-repository ppa:jonathonf/tup <span class="o">&amp;&amp;</span> <span class="nb">sudo </span>apt-get update <span class="o">&amp;&amp;</span> <span class="nb">sudo </span>apt-get <span class="nb">install </span>tup
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>python3 python3-yaml python3-jinja2 python3-jsonschema
+</code></pre></div></div>
+
+<h4 id="linux-ubuntu--2004-1">Linux (Ubuntu &gt;= 20.04)</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt <span class="nb">install </span>gcc-arm-none-eabi
+<span class="nb">sudo </span>apt <span class="nb">install </span>openocd
+<span class="nb">sudo </span>apt <span class="nb">install </span>git-lfs
+<span class="nb">sudo </span>apt <span class="nb">install </span>tup
+<span class="nb">sudo </span>apt <span class="nb">install </span>python3 python3-yaml python3-jinja2 python3-jsonschema
+</code></pre></div></div>
+
+<h4 id="arch-linux">Arch Linux</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>pacman <span class="nt">-S</span> arm-none-eabi-gcc arm-none-eabi-binutils
+<span class="nb">sudo </span>pacman <span class="nt">-S</span> arm-none-eabi-gdb
+<span class="nb">sudo </span>pacman <span class="nt">-S</span> git-lfs
+<span class="nb">sudo </span>pacman <span class="nt">-S</span> tup
+<span class="nb">sudo </span>pacman <span class="nt">-S</span> python python-yaml python-jinja python-jsonschema
+</code></pre></div></div>
+<ul>
+  <li><a href="https://aur.archlinux.org/packages/openocd/">OpenOCD AUR package</a></li>
+</ul>
+
+<h4 id="mac">Mac</h4>
+<p>First install <a href="https://brew.sh/">Homebrew</a>. Then you can run these commands in Terminal:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>brew <span class="nb">install </span>armmbed/formulae/arm-none-eabi-gcc
+brew <span class="nb">install</span> <span class="nt">--cask</span> osxfuse <span class="o">&amp;&amp;</span> brew <span class="nb">install </span>tup
+brew <span class="nb">install </span>openocd
+brew <span class="nb">install </span>git-lfs
+pip3 <span class="nb">install </span>PyYAML Jinja2 jsonschema
+</code></pre></div></div>
+
+<h4 id="windows">Windows</h4>
+<p><strong>Note</strong>: make sure these programs are not only installed but also added to your <code class="language-plaintext highlighter-rouge">PATH</code>.</p>
+
+<p>Some instructions in this document may assume that you’re using a bash command prompt, such as the Windows 10 built-in bash or <a href="https://git-scm.com/download/win">Git</a> bash.</p>
+
+<ul>
+  <li><a href="https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads">ARM compiler</a>
+    <ul>
+      <li><strong>Note 1</strong>: After installing, create an environment variable named <code class="language-plaintext highlighter-rouge">ARM_GCC_ROOT</code> whose value is the path you installed to.  e.g. <code class="language-plaintext highlighter-rouge">C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update</code>.  This variable is used to locate include files for the c/c++ Visual Studio Code extension.</li>
+      <li><strong>Note 2</strong>: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.</li>
+    </ul>
+  </li>
+  <li><a href="http://gittup.org/tup/index.html">Tup</a></li>
+  <li><a href="https://github.com/gnu-mcu-eclipse/windows-build-tools/releases">GNU MCU Eclipse’s Windows Build Tools</a></li>
+  <li><a href="https://www.python.org/downloads/">Python 3</a>
+    <ul>
+      <li>Install Python packages: <code class="language-plaintext highlighter-rouge">pip install PyYAML Jinja2 jsonschema</code></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/xpack-dev-tools/openocd-xpack/releases/">OpenOCD</a>.</li>
+  <li><a href="https://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-utilities/stsw-link009.html">ST-Link/V2 Drivers</a></li>
+</ul>
+
+<p><br /></p>
+
+<h2 id="configuring-the-build">Configuring the build</h2>
+
+<p>To customize the compile time parameters, copy or rename the file <code class="language-plaintext highlighter-rouge">Firmware/tup.config.default</code> to <code class="language-plaintext highlighter-rouge">Firmware/tup.config</code> and edit the parameters in that file:</p>
+
+<p><strong>CONFIG_BOARD_VERSION</strong>: The board version you’re using. Can be <code class="language-plaintext highlighter-rouge">v3.1</code>, <code class="language-plaintext highlighter-rouge">v3.2</code>, <code class="language-plaintext highlighter-rouge">v3.3</code>, <code class="language-plaintext highlighter-rouge">v3.4-24V</code>, <code class="language-plaintext highlighter-rouge">v3.4-48V</code>, <code class="language-plaintext highlighter-rouge">v3.5-24V</code>, <code class="language-plaintext highlighter-rouge">v3.5-48V</code>, etc. Check for a label on the upper side of the ODrive to find out which version you have. Some ODrive versions don’t specify the voltage: in that case you can read the value of the main capacitors: 120uF are 48V ODrives, 470uF are 24V ODrives.</p>
+
+<p><strong>CONFIG_DEBUG</strong>: Defines whether debugging will be enabled when compiling the firmware; specifically the <code class="language-plaintext highlighter-rouge">-g -gdwarf-2</code> flags. Note that printf debugging will only function if your tup.config specifies the <code class="language-plaintext highlighter-rouge">USB_PROTOCOL</code> or <code class="language-plaintext highlighter-rouge">UART_PROTOCOL</code> as stdout and <code class="language-plaintext highlighter-rouge">DEBUG_PRINT</code> is defined. See the IDE specific documentation for more information.</p>
+
+<p>You can also modify the compile-time defaults for all <code class="language-plaintext highlighter-rouge">.config</code> parameters. You will find them if you search for <code class="language-plaintext highlighter-rouge">AxisConfig</code>, <code class="language-plaintext highlighter-rouge">MotorConfig</code>, etc.</p>
+
+<p><br /><br /></p>
+<h2 id="building-and-flashing-the-firmware">Building and flashing the Firmware</h2>
+
+<ol>
+  <li>Run <code class="language-plaintext highlighter-rouge">make</code> in the <code class="language-plaintext highlighter-rouge">Firmware</code> directory.</li>
+  <li>Connect the ODrive via USB and power it up.</li>
+  <li>Flash the firmware using <a href="odrivetool#device-firmware-update">odrivetool dfu</a>.</li>
+</ol>
+
+<h3 id="flashing-using-an-stlinkv2-programmer">Flashing using an STLink/v2 programmer</h3>
+
+<ul>
+  <li>Connect <code class="language-plaintext highlighter-rouge">GND</code>, <code class="language-plaintext highlighter-rouge">SWD</code>, and <code class="language-plaintext highlighter-rouge">SWC</code> on connector J2 to the programmer. Note: Always plug in <code class="language-plaintext highlighter-rouge">GND</code> first!</li>
+  <li>You need to power the board by only <strong>ONE</strong> of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">make flash</code> in the <code class="language-plaintext highlighter-rouge">Firmware</code> directory.
+<strong>Note</strong>: If you receive the error <code class="language-plaintext highlighter-rouge">can't find target interface/stlink-v2.cfg</code> or similar, create and set an environment variable named <code class="language-plaintext highlighter-rouge">OPENOCD_SCRIPTS</code> to the location of the openocd scripts directory.</li>
+</ul>
+
+<p>If the flashing worked, you can connect to the board using the <a href="getting-started#start-odrivetool">odrivetool</a>.</p>
+
+<p><br /><br /></p>
+<h2 id="testing">Testing</h2>
+<p><em>Main article: <a href="/testing.html">Testing</a></em></p>
+
+<p><br /><br /></p>
+<h2 id="debugging">Debugging</h2>
+<p>If you’re using VSCode, make sure you have the Cortex Debug extension, OpenOCD, and the STLink.  You can verify that OpenOCD and STLink are working by ensuring you can flash code.  Open the ODrive_Workspace.code-workspace file, and start a debugging session (F5).  VSCode will pick up the correct settings from the workspace and automatically connect.  Breakpoints can be added graphically in VSCode.</p>
+
+<ul>
+  <li>Run <code class="language-plaintext highlighter-rouge">make gdb</code>. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.</li>
+</ul>
+
+<p><br /><br /></p>
+<h2 id="setting-up-an-ide">Setting up an IDE</h2>
+<p>For working with the ODrive code you don’t need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse. If you’d like to go that route, please see the respective configuration document:</p>
+
+<ul>
+  <li><a href="/configuring-vscode.html">Configuring VSCode</a></li>
+  <li><a href="/configuring-eclipse.html">Configuring Eclipse</a></li>
+</ul>
+
+<p><br /><br /></p>
+<h2 id="stm32cubemx">STM32CubeMX</h2>
+<p>This project uses the STM32CubeMX tool to generate startup code and to ease the configuration of the peripherals. You can download it from <a href="http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&amp;sc=stm32cube-pr2">here</a>. All CubeMX related files are in <code class="language-plaintext highlighter-rouge">Firmware/Board/v3</code>.</p>
+
+<p>You will likely want the pinout for this process. It is available <a href="https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347">here</a>.</p>
+
+<h3 id="maintaining-modified-generated-code">Maintaining modified generated code</h3>
+<p>When generating the code, STM32CubeMX will nuke everything except some special sections that they provide. These sections are marked like <code class="language-plaintext highlighter-rouge">USER CODE BEGIN</code>…<code class="language-plaintext highlighter-rouge">USER CODE END</code>.
+We used to try to make sure all edits we made to the generated code would only go in these sections, so some code structrure may reflect that.
+However over time we realized this will not be tenable, so instead we use git to rebase all changes of the generated code whenever we need to regenerate it.
+We use two special branches that will help us to do this, they are <code class="language-plaintext highlighter-rouge">STM32CubeMX-start</code> and <code class="language-plaintext highlighter-rouge">STM32CubeMX-end</code>.
+How to use these is shown in the following example.</p>
+
+<p><strong>Note</strong>: Due to how this rebasing is done, all development that changes the generated code should be done directly on <code class="language-plaintext highlighter-rouge">STM32CubeMX-end</code>, and not based on <code class="language-plaintext highlighter-rouge">devel</code>, then follow step 4 below to carry them over to your feature branch. If you did some changes to the generated code based from <code class="language-plaintext highlighter-rouge">devel</code>, you need to cherry pick just those changes over to <code class="language-plaintext highlighter-rouge">STM32CubeMX-end</code>.</p>
+
+<h3 id="1-ensuring-a-clean-slate">1. Ensuring a clean slate</h3>
+<ul>
+  <li>We do all changes to the STM32CubeMX config and regenerate the code on top of <code class="language-plaintext highlighter-rouge">STM32CubeMX-start</code>.
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">git checkout STM32CubeMX-start</code></li>
+    </ul>
+  </li>
+  <li>Run stm32cubeMX and load the <code class="language-plaintext highlighter-rouge">Firmware/Board/v3/Odrive.ioc</code> project file.
+    <ul>
+      <li>If the tool asks if you wish to migrate to a new version, choose to download the old firmware package (unless you want to use the latest libraries)</li>
+    </ul>
+  </li>
+  <li>Without changing any settings, press <code class="language-plaintext highlighter-rouge">Project -&gt; Generate code</code>.</li>
+  <li>You may need to let it download some drivers and such.</li>
+  <li>STM32CubeMX may now have a newer version of some of the libraries, so there may be changes to the generated code even though we didn’t change any settings. We need to check that everything is still working, and hence check in the changes:</li>
+  <li><code class="language-plaintext highlighter-rouge">git config --local core.autocrlf input</code> - This will tell git that all files should be checked in with LF endings (CubeMX generates CRLF endings).</li>
+  <li><code class="language-plaintext highlighter-rouge">git diff</code> - Ignore the pile of line ending warnings.</li>
+  <li>If you feel qualified: you can now ispect if CubeMX introduced something stupid. If there were any changes, and they look acceptable, we should commit them:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">git commit -am "Run STM32CubeMX v1.21"</code> - Replace with actual version of CubeMX</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="2-making-changes-to-the-stm32cubemx-config">2. Making changes to the STM32CubeMX config</h3>
+<ul>
+  <li>After completing the above steps, make sure the working directory is clean:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">git status</code> should include “nothing to commit, working tree clean”</li>
+    </ul>
+  </li>
+  <li>Make your changes in STM32CubeMX, save the project and generate the code. (<code class="language-plaintext highlighter-rouge">Project -&gt; Generate code</code>)</li>
+  <li><code class="language-plaintext highlighter-rouge">git diff</code> - Check that the introduced changes are as expected</li>
+  <li>If everything looks ok, you can commit your changes.</li>
+</ul>
+
+<h3 id="3-rebasing-the-modifications-to-the-generated-code">3. Rebasing the modifications to the generated code</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">git checkout STM32CubeMX-end</code></li>
+  <li><code class="language-plaintext highlighter-rouge">git rebase STM32CubeMX-start</code></li>
+  <li>Make sure the rebase finishes, fixing any conflicts that may arise</li>
+</ul>
+
+<h3 id="4-merge-new-stm32cubemx-code-to-your-feature-branch">4. Merge new STM32CubeMX code to your feature branch</h3>
+<p>Simply merge the new state at <code class="language-plaintext highlighter-rouge">STM32CubeMX-end</code> into your feature branch.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">git checkout your-feature</code></li>
+  <li><code class="language-plaintext highlighter-rouge">git merge STM32CubeMX-end</code></li>
+</ul>
+
+<h3 id="5-pushing-back-upstream">5. Pushing back upstream</h3>
+<ul>
+  <li>Generate a PR like normal for your feature.</li>
+  <li>Make sure youhave pushed to the <code class="language-plaintext highlighter-rouge">STM32CubeMX-start</code> and <code class="language-plaintext highlighter-rouge">STM32CubeMX-end</code> branches on your fork.</li>
+  <li>Make a note in your PR to the maintainer that they need to update the STM32CubeMX branches when they merge the PR.</li>
+</ul>
+
+<p><br /><br /></p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="libusb_error_io-when-flashing-with-the-stlinkv2"><code class="language-plaintext highlighter-rouge">LIBUSB_ERROR_IO</code> when flashing with the STLink/v2</h3>
+
+<p><strong>Problem:</strong> when I try to flash the ODrive with the STLink using <code class="language-plaintext highlighter-rouge">make flash</code> I get this error:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Open On-Chip Debugger 0.10.0
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : auto-selecting first available session transport "hla_swd". To override use 'transport select &lt;transport&gt;'.
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+adapter speed: 2000 kHz
+adapter_nsrst_delay: 100
+none separate
+Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+Info : clock speed 1800 kHz
+Error: libusb_open() failed with LIBUSB_ERROR_IO
+Error: open failed
+in procedure 'init' 
+in procedure 'ocd_bouncer'
+</code></pre></div></div>
+
+<p><strong>Solution:</strong>
+This happens from time to time.</p>
+<ol>
+  <li>Unplug the STLink and all ODrives from your computer</li>
+  <li>Power off the ODrive you’re trying to flash</li>
+  <li>Plug in the STLink into your computer</li>
+  <li>Power on the ODrive</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">make flash</code> again</li>
+</ol>
+
+<h3 id="warn--cannot-identify-target-as-a-stm32-family-when-flashing-using-openocd"><code class="language-plaintext highlighter-rouge">Warn : Cannot identify target as a STM32 family.</code> when flashing using openocd</h3>
+
+<p><strong>Problem:</strong> When I try to flash ODrive v4.1 with <code class="language-plaintext highlighter-rouge">make flash</code> then I get:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[...]
+** Programming Started **
+auto erase enabled
+Info : device id = 0x10006452
+Warn : Cannot identify target as a STM32 family.
+Error: auto_probe failed
+embedded:startup.tcl:487: Error: ** Programming Failed **
+in procedure 'program' 
+in procedure 'program_error' called at file "embedded:startup.tcl", line 543
+at file "embedded:startup.tcl", line 487
+</code></pre></div></div>
+
+<p><strong>Solution:</strong>
+Compile and install a recent version of openocd from source. The latest official release (0.10.0 as of Nov 2020) doesn’t support the STM32F722 yet.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt-get install libtool libusb-1.0
+git clone https://git.code.sf.net/p/openocd/code openocd
+cd openocd/
+./bootstrap
+./configure --enable-stlink
+make
+sudo make install
+</code></pre></div></div>
+
+<h2 id="documentation">Documentation</h2>
+
+<p>All *.md files in the <code class="language-plaintext highlighter-rouge">docs/</code> directory of the master branch are served up by GitHub Pages on <a href="https://docs.odriverobotics.com">this domain</a>.</p>
+
+<ul>
+  <li>Theme: <a href="https://github.com/pages-themes/minimal">minimal</a> by <a href="https://github.com/orderedlist">orderedlist</a></li>
+  <li>HTML layout: <code class="language-plaintext highlighter-rouge">docs/_layouts/default.html</code></li>
+  <li>CSS style: <code class="language-plaintext highlighter-rouge">docs/assets/css/styles.scss</code></li>
+  <li>Site index: <code class="language-plaintext highlighter-rouge">docs/_data/index.yaml</code></li>
+</ul>
+
+<p>To run the docs server locally:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>docs
+gem <span class="nb">install </span>bundler <span class="c"># The gem command typically comes with a Ruby installation</span>
+<span class="c">#export PATH="$PATH:~/.gem/ruby/2.7.0/bin" # or similar (depends on OS)</span>
+<span class="nb">rm </span>Gemfile.lock <span class="c"># only if below commands cause trouble</span>
+bundle config path ruby-bundle
+bundle <span class="nb">install
+mkdir</span> <span class="nt">-p</span> _api _includes
+python ../Firmware/interface_generator_stub.py <span class="nt">--definitions</span> ../Firmware/odrive-interface.yaml <span class="nt">--template</span> _layouts/api_documentation_template.j2 <span class="nt">--outputs</span> _api/<span class="s1">'#'</span>.md <span class="o">&amp;&amp;</span> python ../Firmware/interface_generator_stub.py <span class="nt">--definitions</span> ../Firmware/odrive-interface.yaml <span class="nt">--template</span> _layouts/api_index_template.j2 <span class="nt">--output</span> _includes/apiindex.html
+bundle <span class="nb">exec </span>jekyll serve <span class="nt">--incremental</span> <span class="nt">--host</span><span class="o">=</span>0.0.0.0
+</code></pre></div></div>
+
+<p>On Ubuntu 18.04, prerequisites are: <code class="language-plaintext highlighter-rouge">ruby ruby-dev zlib1g-dev</code>.</p>
+
+<h2 id="modifying-libfibre">Modifying libfibre</h2>
+
+<p>If you need to modify libfibre add <code class="language-plaintext highlighter-rouge">CONFIG_BUILD_LIBFIBRE=true</code> to your tup.config and rerun <code class="language-plaintext highlighter-rouge">make</code>. After this you can start <code class="language-plaintext highlighter-rouge">odrivetool</code> (on your local PC) and it will use the updated libfibre.</p>
+
+<p>To cross-compile libfibre for the Raspberry Pi, run <code class="language-plaintext highlighter-rouge">make libfibre-linux-armhf</code> or <code class="language-plaintext highlighter-rouge">make libfibre-all</code>. This will require a docker container. See <a href="../Firmware/fibre-cpp/README.md">fibre-cpp readme</a> for details.</p>
+
+<p>docker run -it -v “$(pwd)”:/build -v /tmp/build:/build/build -w /build fibre-compiler configs/linux-armhf.config</p>
+
+<p>If you’re satisfied with the changes don’t forget to generate binaries for all
+supported systems using <code class="language-plaintext highlighter-rouge">make libfibre-all</code>.</p>
+
+<h2 id="releases">Releases</h2>
+
+<p>We use GitHub Releases to provide firmware releases.</p>
+
+<ol>
+  <li>Cut off the changelog to reflect the new release</li>
+  <li>Merge the release candidate into master.</li>
+  <li>Push a (lightweight) tag to the master branch. Follow the existing naming convention.</li>
+  <li>If you changed something in libfibre, regenerate the binaries using <code class="language-plaintext highlighter-rouge">make libfibre-all</code>. See <a href="#modifying-libfibre">Modifying libfibre</a> for details.</li>
+  <li>Push the python tools to PyPI (see setup.py for details).</li>
+  <li>Edit the release on GitHub to add a title and description (copy&amp;paste from changelog).</li>
+</ol>
+
+<h2 id="other-code-maintenance-notes">Other code maintenance notes</h2>
+<p>The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:
+find: <code class="language-plaintext highlighter-rouge">([-+]?[0-9]+\.[0-9]+(?:[eE][-+]?[0-9]+)?)([^f0-9e])</code>
+replace: <code class="language-plaintext highlighter-rouge">\1f\2</code></p>
+
+<p><br /><br /></p>
+
+<h2 id="notes-for-contributors">Notes for Contributors</h2>
+<p>In general the project uses the <a href="https://google.github.io/styleguide/cppguide.html">Google C++ Style Guide</a>, with a few exceptions:</p>
+
+<ul>
+  <li>The default indentation is 4 spaces.</li>
+  <li>The 80 character limit is not very strictly enforced, merely encouraged.</li>
+  <li>The file extensions *.cpp and *.hpp are used instead of *.cc and *.h.</li>
+</ul>
+
+<p>Your help is welcome! However before you start working on a feature/change that will take you a non-negligible amount of time and that you plan to upstream please discuss your plans with us on GitHub or Discord. This will ensure that your implementation is in line with the direction that ODrive is going.</p>
+
+<p>When filing a PR please go through this checklist:</p>
+
+<ul>
+  <li>Make sure you adhere to the same coding style that we use (see note above).</li>
+  <li>Update CHANGELOG.md.</li>
+  <li>If you removed/moved/renamed things in <code class="language-plaintext highlighter-rouge">odrive-interface.yaml</code> make sure to add corresponding bullet points tp the “API migration notes” section in the changelog. Use git to compare against the <code class="language-plaintext highlighter-rouge">devel</code> branch.</li>
+  <li>Also, for each removed/moved/renamed API item use your IDE’s search feature to search for occurrences of this name. Update the places you found (this will usually be documentation and test scripts).</li>
+  <li>If you added things to <code class="language-plaintext highlighter-rouge">odrive-interface.yaml</code> make sure the new things have decent documentation in the YAML file. We don’t expect 100% coverage but use good sense of what to document.</li>
+  <li>Make sure your PR doesn’t contain spurious changes that unnecessarily add or remove whitespace. These add noise and make the reviewer’s lifes harder.</li>
+  <li>If you changed any enums in <code class="language-plaintext highlighter-rouge">odrive-interface.yaml</code>, make sure you update <a href="../tools/odrive/enums.py">enums.py</a> and <a href="../Arduino/ODriveArduino/ODriveEnums.h">ODriveEnums.h</a>. The file includes instructions on how to do this. Check the diff to verify that none of the existing enumerators changed their value.</li>
+</ul>
+
+
+      </section>
+      <!--<footer>
+        
+        <p>This project is maintained by <a href="https://github.com/odriverobotics">odriverobotics</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>-->
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-93396600-3', 'auto');
+      ga('send', 'pageview');
+    </script>
+    
+    <script type="text/javascript">
+      // Rewrite all links that start with "../" to point to the GitHub repo
+      window.onload = function(){
+        var links = document.links;
+        var i = links.length;
+        while (i--) {
+          if (links[i].getAttribute("href").slice(0, 3) == "../") {
+            links[i].href = "https://github.com/madcowswe/ODrive/blob/master/" + links[i].getAttribute("href").slice(3);
+          }
+          if (links[i].getAttribute("href").slice(0, 15) == "getting-started") {
+            links[i].href = "/" + links[i].getAttribute("href").slice(15);
+          }
+        }
+      }
+    </script>
+    <script>
+      // Scroll the navbar to the position of the selected item
+      var element = document.getElementsByClassName("currentitem")[0];
+      element.scrollIntoView(false);
+    </script>
+  </body>
+</html>
+
