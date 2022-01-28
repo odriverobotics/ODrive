@@ -59,7 +59,13 @@ For example, an Axis ID of :code:`0x01` with a command of :code:`0x0C` would be 
 
 :code:`0x01 << 5 | 0x0C = 0x2C`
 
+Messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. csv-table:: CAN Messages
+   :file: figures/can-protocol.csv
+   :header-rows: 1
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All multibyte values are little endian (aka Intel format, aka least significant byte first).
 
