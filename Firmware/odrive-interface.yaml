@@ -636,6 +636,10 @@ interfaces:
           InvalidMirrorAxis:
           InvalidLoadEncoder:
           InvalidEstimate:
+      input_jake:
+        type: float32
+        unit: turn
+        c_setter: set_input_jake
       input_pos:
         type: float32
         unit: turn

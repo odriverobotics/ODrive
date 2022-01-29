@@ -290,7 +290,7 @@ int odrive_main(void) {
     // Watts: Jake: Start our PWM Outputs
     // GPIO3 -- PA2 -- TIM5 CH3
     // GPIO4 -- PA3 -- TIM4 CH4
-    watts_set_pwm_test();
+    // watts_set_pwm_test();
 
     // This delay serves two purposes:
     //  - Let the current sense calibration converge (the current

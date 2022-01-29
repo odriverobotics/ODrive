@@ -211,9 +211,12 @@ void watts_set_pwm_test()
     uint16_t pulse = 255;
 
     watts_set_pwm(htim5, TIM_CHANNEL_3, period, pulse);
+
+    pulse *= 2;
+    watts_set_pwm(htim5, TIM_CHANNEL_4, period, pulse);
 }
 
-void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse);
+void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse)
 {
     // Stop it first?
     HAL_TIM_PWM_Stop(&timer, channel); // stop generation of pwm
