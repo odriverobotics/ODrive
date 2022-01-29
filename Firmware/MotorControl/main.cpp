@@ -287,6 +287,11 @@ int odrive_main(void) {
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
 
+    // Watts: Jake: Start our PWM Outputs
+    // GPIO3 -- PA2 -- TIM5 CH3
+    // GPIO4 -- PA3 -- TIM4 CH4
+    watts_set_pwm_test();
+
     // This delay serves two purposes:
     //  - Let the current sense calibration converge (the current
     //    sense interrupts are firing in background by now)

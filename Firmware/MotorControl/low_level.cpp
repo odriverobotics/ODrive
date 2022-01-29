@@ -198,6 +198,41 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 
 /* Function implementations --------------------------------------------------*/
 
+
+// uint32_t Period;       Specifies the period value to be loaded into the active
+//                        Auto-Reload Register at the next update event.
+//                        This parameter can be a number between Min_Data = 0x0000U and Max_Data = 0xFFFF.
+
+// uint32_t Pulse;        Specifies the pulse value to be loaded into the Capture Compare Register.
+//                        This parameter can be a number between Min_Data = 0x0000U and Max_Data = 0xFFFFU
+void watts_set_pwm_test()
+{
+    uint16_t period = 255;
+    uint16_t pulse = 255;
+
+    watts_set_pwm(htim5, TIM_CHANNEL_3, period, pulse);
+}
+
+void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse);
+{
+    // Stop it first?
+    HAL_TIM_PWM_Stop(&timer, channel); // stop generation of pwm
+
+    // Timer period
+    timer.Init.Period = period; // set the period duration
+    HAL_TIM_PWM_Init(&timer); // reinititialise with new period value
+
+    // PWM config
+    TIM_OC_InitTypeDef sConfigOC;
+    sConfigOC.OCMode = TIM_OCMODE_PWM1;
+    sConfigOC.Pulse = pulse; // set the pulse duration
+    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+    HAL_TIM_PWM_ConfigChannel(&timer, &sConfigOC, channel);
+
+    HAL_TIM_PWM_Start(&timer, channel); // start pwm generation
+}
+
 void start_adc_pwm() {
     // Enable ADC and interrupts
     __HAL_ADC_ENABLE(&hadc1);
