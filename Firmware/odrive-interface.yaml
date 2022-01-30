@@ -289,6 +289,14 @@ interfaces:
             doc: the min endstop was not enabled during homing
           OverTemp:
             doc: Check `fet_thermistor.error` and `motor_thermistor.error` for more information.
+      servo1_input:
+        type: float32
+        unit: us
+        c_setter: set_servo1_input
+      servo2_input:
+        type: float32
+        unit: us
+        c_setter: set_servo2_input
       step_dir_active: readonly bool
       current_state: readonly AxisState
       requested_state: AxisState
@@ -636,10 +644,6 @@ interfaces:
           InvalidMirrorAxis:
           InvalidLoadEncoder:
           InvalidEstimate:
-      input_jake:
-        type: float32
-        unit: turn
-        c_setter: set_input_jake
       input_pos:
         type: float32
         unit: turn

@@ -370,7 +370,8 @@ void TIM5_IRQHandler(void)
   /* USER CODE BEGIN TIM5_IRQn 0 */
 
   // We know we only use capture mode here, so bypass HAL
-  decode_tim_capture(&htim5, &pwm_in_cb);
+  // Watts: Jake: uhhh wtf no
+  // decode_tim_capture(&htim5, &pwm_in_cb);
 
   /* USER CODE END TIM5_IRQn 0 */
   HAL_TIM_IRQHandler(&htim5);

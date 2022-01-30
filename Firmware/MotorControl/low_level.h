@@ -44,11 +44,9 @@ void tim_update_cb(TIM_HandleTypeDef* htim);
 void pwm_in_cb(int channel, uint32_t timestamp);
 }
 
-// Initalisation
 // Watts: Jake
-void watts_set_pwm_test();
-void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse);
-
+void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t pulse);
+// Initalisation
 void start_adc_pwm();
 void start_pwm(TIM_HandleTypeDef* htim);
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,

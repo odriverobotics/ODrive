@@ -282,9 +282,9 @@ void MX_TIM5_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 0;
+  htim5.Init.Prescaler = 84-1; // 84Mhz APB1 Timer --> 1Mhz == microseconds
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 0xFFFFFFFF;
+  htim5.Init.Period = 2500-1; // 400Hz
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
   {
@@ -528,37 +528,38 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
   }
 }
 
-void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
-{
+// Watts: Jake: no, we are configuring it for PWM above
+// void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
+// {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
-  if(tim_icHandle->Instance==TIM5)
-  {
-  /* USER CODE BEGIN TIM5_MspInit 0 */
+//   GPIO_InitTypeDef GPIO_InitStruct;
+//   if(tim_icHandle->Instance==TIM5)
+//   {
+//   /* USER CODE BEGIN TIM5_MspInit 0 */
 
-  /* USER CODE END TIM5_MspInit 0 */
-    /* TIM5 clock enable */
-    __HAL_RCC_TIM5_CLK_ENABLE();
+//   /* USER CODE END TIM5_MspInit 0 */
+//     /* TIM5 clock enable */
+//     __HAL_RCC_TIM5_CLK_ENABLE();
   
-    /**TIM5 GPIO Configuration    
-    PA2     ------> TIM5_CH3
-    PA3     ------> TIM5_CH4 
-    */
-    GPIO_InitStruct.Pin = GPIO_3_Pin|GPIO_4_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+//     /**TIM5 GPIO Configuration
+//     PA2     ------> TIM5_CH3
+//     PA3     ------> TIM5_CH4
+//     */
+//     GPIO_InitStruct.Pin = GPIO_3_Pin|GPIO_4_Pin;
+//     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//     GPIO_InitStruct.Pull = GPIO_NOPULL;
+//     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//     GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
+//     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* TIM5 interrupt Init */
-    HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM5_IRQn);
-  /* USER CODE BEGIN TIM5_MspInit 1 */
+//     /* TIM5 interrupt Init */
+//     HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
+//     HAL_NVIC_EnableIRQ(TIM5_IRQn);
+//   /* USER CODE BEGIN TIM5_MspInit 1 */
 
-  /* USER CODE END TIM5_MspInit 1 */
-  }
-}
+//   /* USER CODE END TIM5_MspInit 1 */
+//   }
+// }
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
 {
 
@@ -811,30 +812,30 @@ void HAL_TIM_Encoder_MspDeInit(TIM_HandleTypeDef* tim_encoderHandle)
   }
 }
 
-void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef* tim_icHandle)
-{
+// Watts: Jake: no.... PWM output
+// void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef* tim_icHandle)
+// {
 
-  if(tim_icHandle->Instance==TIM5)
-  {
-  /* USER CODE BEGIN TIM5_MspDeInit 0 */
+//   if(tim_icHandle->Instance==TIM5)
+//   {
+//   /* USER CODE BEGIN TIM5_MspDeInit 0 */
 
-  /* USER CODE END TIM5_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_TIM5_CLK_DISABLE();
+//   /* USER CODE END TIM5_MspDeInit 0 */
+//     /* Peripheral clock disable */
+//     __HAL_RCC_TIM5_CLK_DISABLE();
   
-    /**TIM5 GPIO Configuration    
-    PA2     ------> TIM5_CH3
-    PA3     ------> TIM5_CH4 
-    */
-    HAL_GPIO_DeInit(GPIOA, GPIO_3_Pin|GPIO_4_Pin);
+//     // TIM5 GPIO Configuration
+//     // PA2     ------> TIM5_CH3
+//     // PA3     ------> TIM5_CH4
+//     HAL_GPIO_DeInit(GPIOA, GPIO_3_Pin|GPIO_4_Pin);
 
-    /* TIM5 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(TIM5_IRQn);
-  /* USER CODE BEGIN TIM5_MspDeInit 1 */
+//     /* TIM5 interrupt Deinit */
+//     HAL_NVIC_DisableIRQ(TIM5_IRQn);
+//   /* USER CODE BEGIN TIM5_MspDeInit 1 */
 
-  /* USER CODE END TIM5_MspDeInit 1 */
-  }
-} 
+//   /* USER CODE END TIM5_MspDeInit 1 */
+//   }
+// }
 
 /* USER CODE BEGIN 1 */
 

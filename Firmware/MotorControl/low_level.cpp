@@ -198,42 +198,15 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 
 /* Function implementations --------------------------------------------------*/
 
-
-// uint32_t Period;       Specifies the period value to be loaded into the active
-//                        Auto-Reload Register at the next update event.
-//                        This parameter can be a number between Min_Data = 0x0000U and Max_Data = 0xFFFF.
-
-// uint32_t Pulse;        Specifies the pulse value to be loaded into the Capture Compare Register.
-//                        This parameter can be a number between Min_Data = 0x0000U and Max_Data = 0xFFFFU
-void watts_set_pwm_test()
+void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t pulse)
 {
-    uint16_t period = 255;
-    uint16_t pulse = 255;
-
-    watts_set_pwm(htim5, TIM_CHANNEL_3, period, pulse);
-
-    pulse *= 2;
-    watts_set_pwm(htim5, TIM_CHANNEL_4, period, pulse);
-}
-
-void watts_set_pwm(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse)
-{
-    // Stop it first?
-    HAL_TIM_PWM_Stop(&timer, channel); // stop generation of pwm
-
-    // Timer period
-    timer.Init.Period = period; // set the period duration
-    HAL_TIM_PWM_Init(&timer); // reinititialise with new period value
-
-    // PWM config
     TIM_OC_InitTypeDef sConfigOC;
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse = pulse; // set the pulse duration
+    sConfigOC.Pulse = pulse;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
     HAL_TIM_PWM_ConfigChannel(&timer, &sConfigOC, channel);
-
-    HAL_TIM_PWM_Start(&timer, channel); // start pwm generation
+    HAL_TIM_PWM_Start(&timer, channel);
 }
 
 void start_adc_pwm() {
@@ -750,33 +723,33 @@ uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
 #endif
 }
 
-void pwm_in_init() {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
+// void pwm_in_init() {
+//     GPIO_InitTypeDef GPIO_InitStruct;
+//     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+//     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//     GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 
-    TIM_IC_InitTypeDef sConfigIC;
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
-    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 15;
+//     TIM_IC_InitTypeDef sConfigIC;
+//     sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+//     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+//     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+//     sConfigIC.ICFilter = 15;
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
-#else
-    int gpio_num = 4; {
-#endif
-        if (fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint)) {
-            GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
-            HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
-            HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
-            HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, gpio_num_to_tim_2_5_channel(gpio_num));
-            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(gpio_num));
-        }
-    }
-}
+// #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+//     for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
+// #else
+//     int gpio_num = 4; {
+// #endif
+//         if (fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint)) {
+//             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
+//             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
+//             HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
+//             HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, gpio_num_to_tim_2_5_channel(gpio_num));
+//             HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(gpio_num));
+//         }
+//     }
+// }
 
 //TODO: These expressions have integer division by 1MHz, so it will be incorrect for clock speeds of not-integer MHz
 #define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ

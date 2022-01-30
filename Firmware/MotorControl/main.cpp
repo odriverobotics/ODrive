@@ -134,23 +134,23 @@ extern "C" int construct_objects(){
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (odrv.config_.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        // GPIO_InitTypeDef GPIO_InitStruct;
+        // GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        // GPIO_InitStruct.Pull = GPIO_PULLUP;
 
-        GPIO_InitStruct.Pin = I2C_A0_PIN;
-        HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A1_PIN;
-        HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A2_PIN;
-        HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
+        // GPIO_InitStruct.Pin = I2C_A0_PIN;
+        // HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
+        // GPIO_InitStruct.Pin = I2C_A1_PIN;
+        // HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
+        // GPIO_InitStruct.Pin = I2C_A2_PIN;
+        // HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
 
-        osDelay(1);
-        i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
-        MX_I2C1_Init(i2c_stats_.addr);
+        // osDelay(1);
+        // i2c_stats_.addr = (0xD << 3);
+        // i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
+        // i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
+        // i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
+        // MX_I2C1_Init(i2c_stats_.addr);
     } else
 #endif
         MX_CAN1_Init();
@@ -167,10 +167,10 @@ extern "C" int construct_objects(){
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_2_Pin;
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_3_Pin;
-    HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_4_Pin;
-    HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
+    // GPIO_InitStruct.Pin = GPIO_3_Pin;
+    // HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
+    // GPIO_InitStruct.Pin = GPIO_4_Pin;
+    // HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
     GPIO_InitStruct.Pin = GPIO_5_Pin;
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
@@ -260,7 +260,8 @@ int odrive_main(void) {
 
     // Start pwm-in compare modules
     // must happen after communication is initialized
-    pwm_in_init();
+    // Watts: Jake: we don't use PWM IN
+    // pwm_in_init();
 
     // Set up the CS pins for absolute encoders
     for(auto& axis : axes){
@@ -286,11 +287,6 @@ int odrive_main(void) {
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
-
-    // Watts: Jake: Start our PWM Outputs
-    // GPIO3 -- PA2 -- TIM5 CH3
-    // GPIO4 -- PA3 -- TIM4 CH4
-    // watts_set_pwm_test();
 
     // This delay serves two purposes:
     //  - Let the current sense calibration converge (the current

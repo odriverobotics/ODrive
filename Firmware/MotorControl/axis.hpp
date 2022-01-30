@@ -181,6 +181,20 @@ public:
         }
     }
 
+    constexpr void servo1_input_updated() {
+        servo1_input_updated_ = true;
+    }
+        constexpr void servo2_input_updated() {
+        servo2_input_updated_ = true;
+    }
+    void set_servo1_input(float value) { servo1_input_ = value; servo1_input_updated(); };
+    void set_servo2_input(float value) { servo2_input_ = value; servo2_input_updated(); };
+    bool servo1_input_updated_ = true;
+    bool servo2_input_updated_ = true;
+    float servo1_input_ = 1000.0f;     // [us]
+    float servo2_input_ = 1000.0f;     // [us]
+
+    void run_watts_servo_updates();
     bool run_lockin_spin(const LockinConfig_t &lockin_config);
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();

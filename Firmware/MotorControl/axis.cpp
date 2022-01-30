@@ -342,6 +342,8 @@ bool Axis::run_closed_loop_control_loop() {
 
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this](){
+        // Watts: Jake: update servo PWMs
+         run_watts_servo_updates();
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float torque_setpoint;
         if (!controller_.update(&torque_setpoint))
@@ -461,9 +463,28 @@ bool Axis::run_idle_loop() {
     safety_critical_disarm_motor_pwm(motor_);
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
+        // Watts: Jake: update servo PWMs
+         run_watts_servo_updates();
         return true;
     });
     return check_for_errors();
+}
+
+void Axis::run_watts_servo_updates()
+{
+    if (servo1_input_updated_) {
+        // Period is always 400Hz
+        uint16_t pulse = static_cast<uint16_t>(servo1_input_);
+        watts_set_pwm(htim5, TIM_CHANNEL_3, pulse);
+        servo1_input_updated_ = false;
+    }
+
+    if (servo2_input_updated_) {
+        // Period is always 400Hz
+        uint16_t pulse = static_cast<uint16_t>(servo2_input_);
+        watts_set_pwm(htim5, TIM_CHANNEL_4, pulse);
+        servo2_input_updated_ = false;
+    }
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate

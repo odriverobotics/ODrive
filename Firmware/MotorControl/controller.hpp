@@ -57,10 +57,6 @@ public:
         input_pos_updated_ = true;
     }
 
-    constexpr void input_jake_updated() {
-        input_jake_updated_ = true;
-    }
-
     bool select_encoder(size_t encoder_num);
 
     // Trajectory-Planned control
@@ -93,7 +89,6 @@ public:
     float vel_integrator_torque_ = 0.0f;    // [Nm]
     float torque_setpoint_ = 0.0f;  // [Nm]
 
-    float input_jake_ = 0.0f;     // [turns]
     float input_pos_ = 0.0f;     // [turns]
     float input_vel_ = 0.0f;     // [turn/s]
     float input_torque_ = 0.0f;  // [Nm]
@@ -101,7 +96,6 @@ public:
     float input_filter_ki_ = 0.0f;
 
     bool input_pos_updated_ = false;
-    bool input_jake_updated_ = false;
     
     bool trajectory_done_ = true;
 
@@ -109,8 +103,6 @@ public:
 
     // custom setters
     void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
-
-    void set_input_jake(float value) { input_jake_ = value; input_jake_updated(); };
 
 };
 
