@@ -50,7 +50,7 @@ runs:
         
         import aiohttp
 
-        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-releases')
+        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-release')
         from odrive.api_client import ApiClient
         from private_release_api import PrivateReleaseApi # well not so private anymore
         from odrive.crypto import safe_b64encode
@@ -96,7 +96,7 @@ runs:
         
         import aiohttp
 
-        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-releases')
+        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-release')
         from odrive.api_client import ApiClient
         from private_release_api import PrivateReleaseApi
         from odrive.crypto import safe_b64decode
