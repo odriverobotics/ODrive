@@ -2,73 +2,37 @@ name: Build and publish HTML documentation website
 
 on:
   push:
-    branches: [ master ]
+    branches: [ doc-test ]
 
 jobs:
-  jekyll:
+  make-html:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-
-    # Use GitHub Actions' cache for ruby and python packages to shorten build times and decrease load on servers
-    - name: Cache gems
-      uses: actions/cache@v2
-      with:
-        path: docs/vendor/bundle
-        key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-gems-
     
     - name: Cache pip
       uses: actions/cache@v2
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-PyYAML-Jinja2-jsonschema
+        key: ${{ runner.os }}-pip-sphinx-sphinx-tabs-sphinx-design
         restore-keys: |
           ${{ runner.os }}-pip-
           ${{ runner.os }}-
 
     - name: Install Python dependencies
-      run: pip install PyYAML Jinja2 jsonschema
-
-    # Autogenerate the API reference .md files in the python in the python/python3 container
-    - name: Autogenerate the API reference .md files in the python container
-      run: |
-        mkdir -p docs/_api docs/_includes
-        python Firmware/interface_generator_stub.py --definitions Firmware/odrive-interface.yaml --template docs/_layouts/api_documentation_template.j2 --outputs docs/_api/#.md
-        python Firmware/interface_generator_stub.py --definitions Firmware/odrive-interface.yaml --template docs/_layouts/api_index_template.j2 --output docs/_includes/apiindex.html
+      run: pip install sphinx sphinx-tabs sphinx-design
     
-    - name: Build the site in the jekyll/builder container
+    - name: Build HTML docs
       run: |
-        docker run \
-        -v ${{ github.workspace }}:/srv/jekyll -e PAGES_REPO_NWO=${GITHUB_REPOSITORY} \
-        ruby:2.7-buster /bin/sh -c "
-          chmod 777 /srv/jekyll/docs && \
-          cd /srv/jekyll/docs && \
-          bundle config path vendor/bundle && \
-          bundle install && \
-          bundle exec jekyll build --baseurl \"\"
-          cd ..
-          mv docs/_site _site
-          rm -rdf docs
-          mv _site docs
-          touch docs/.nojekyll
-        "
-        # Extra checks to reduce likelihood of defect build
-        test -f docs/CNAME
-        test -f docs/index.html
+        cd docs
+        make html
 
-    - name: Push to documentation branch
-      run: |
-        git config user.name "${GITHUB_ACTOR}"
-        git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-        git add -f docs
-        git commit -m "jekyll build from Action ${GITHUB_SHA}"
-        git push --force origin HEAD:${REMOTE_BRANCH}
-      env:
-        REMOTE_BRANCH: gh-pages
+    - name: Upload docs
+      uses: ./.github/actions/upload-release
+      with:
+        release_type: docs
+        src_dir: docs/_build/html
+        do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
+        do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
+        odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
+        variant: public
