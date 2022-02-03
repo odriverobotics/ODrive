@@ -15,13 +15,13 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-sphinx-sphinx-tabs-sphinx-design
+        key: ${{ runner.os }}-pip-sphinx-sphinx-tabs-sphinx-design-sphinx_copybutton
         restore-keys: |
           ${{ runner.os }}-pip-
           ${{ runner.os }}-
 
     - name: Install Python dependencies
-      run: pip install sphinx sphinx-tabs sphinx-design
+      run: pip install sphinx sphinx-tabs sphinx-design sphinx_copybutton
     
     - name: Build HTML docs
       run: |
