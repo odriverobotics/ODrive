@@ -3,6 +3,7 @@ name: Build and publish HTML documentation website
 on:
   push:
     branches: [ doc-test ]
+    paths: ['docs/**', '.github/**']
 
 jobs:
   make-html:
@@ -24,14 +25,14 @@ jobs:
     
     - name: Build HTML docs
       run: |
-        cd docs
+        cd docs/reStructuredText
         make html
 
     - name: Upload docs
       uses: ./.github/actions/upload-release
       with:
         release_type: docs
-        src_dir: docs/_build/html
+        src_dir: reStructuredText/docs/_build/html
         do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
         do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
         odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
