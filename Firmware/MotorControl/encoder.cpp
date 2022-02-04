@@ -46,7 +46,7 @@ void Encoder::setup() {
         .CLKPolarity = (mode_ == MODE_SPI_ABS_AEAT || mode_ == MODE_SPI_ABS_MA732) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
         .CLKPhase = SPI_PHASE_2EDGE,
         .NSS = SPI_NSS_SOFT,
-        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
+        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
         .FirstBit = SPI_FIRSTBIT_MSB,
         .TIMode = SPI_TIMODE_DISABLE,
         .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
@@ -735,7 +735,7 @@ bool Encoder::update() {
             if (abs_spi_pos_updated_ == false) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
-                if (spi_error_rate_ > 0.005f) {
+                if (spi_error_rate_ > 0.05f) {
                     set_error(ERROR_ABS_SPI_COM_FAIL);
                     return false;
                 }
