@@ -1495,7 +1495,7 @@ valuetypes:
           * `CONTROL_MODE_POSITION_CONTROL`
           * `CONTROL_MODE_VELOCITY_CONTROL`
           * `CONTROL_MODE_TORQUE_CONTROL`
-      Tuning:
+      TUNING:
         brief: Implements a tuning mode
         doc: |
           Used for tuning your odrive, this mode allows the user to set different frequencies.
