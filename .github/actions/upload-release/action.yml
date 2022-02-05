@@ -1,0 +1,128 @@
+name: 'Upload (Pre)release'
+description: |
+  Pushes the specified local directory to our release file server and registers
+  the new content on our release index server.
+  Whether the release will be public depends on the channel and its settings.
+
+inputs:
+  release_type:
+    description: 'Release type (firmware, gui, docs, internal-docs).' # TODO: Currently only firmware is supported.
+    required: true
+  src_dir:
+    description: 'The source directory on the local system.'
+    required: true
+  do_access_key:
+    description: 'DigitalOcean access key'
+    required: true
+  do_secret_key:
+    description: 'DigitalOcean secret key'
+    required: true
+  odrive_api_key:
+    description: 'Key to our release index server'
+    required: true
+  product:
+    description: 'ODrive product name (for firmware releases only).'
+    required: false
+  app:
+    description: 'Firmware app name (default, bootloader) (for firmware releases only).'
+    required: false
+  variant:
+    description: 'Variant (for docs releases only).'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Prerequisites
+      shell: bash
+      run: pip install aiohttp cryptography
+
+    - name: Install odrivetool
+      shell: bash
+      run: pip install odrive --pre
+
+    - name: Load Content Key
+      id: load-content-key
+      shell: python
+      run: |
+        import asyncio
+        import sys
+        
+        import aiohttp
+
+        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-release')
+        from odrive.api_client import ApiClient
+        from private_release_api import PrivateReleaseApi # well not so private anymore
+        from odrive.crypto import safe_b64encode
+
+        content_key = PrivateReleaseApi.get_content_key('${{ inputs.src_dir }}', "${{ github.sha }}")
+
+        async def main():
+          async with aiohttp.ClientSession() as session:
+            api_client = ApiClient(session, key='${{ inputs.odrive_api_key }}')
+            release_api = PrivateReleaseApi(api_client)
+            manifest = await release_api.get_manifest('${{ inputs.release_type }}', content_key)
+            needs_upload = manifest is None
+
+          print("::set-output name=content-key::" + safe_b64encode(content_key))
+          print("::set-output name=needs-upload::" + ('true' if needs_upload else 'false'))
+
+        asyncio.run(main())
+
+      # This is for debugging only
+    - name: Dump context
+      shell: bash
+      env:
+        CONTEXT: ${{ toJson(steps) }}
+      run: |
+        echo "$CONTEXT"
+
+    - name: Upload to DigitalOcean
+      if: steps.load-content-key.outputs.needs-upload == 'true'
+      uses: BetaHuhn/do-spaces-action@v2
+      with:
+        access_key: ${{ inputs.do_access_key }}
+        secret_key: ${{ inputs.do_secret_key }}
+        space_name: odrive-cdn
+        space_region: nyc3
+        source: ${{ inputs.src_dir }}
+        out_dir: releases/${{ inputs.release_type }}/${{ steps.load-content-key.outputs.content-key }}
+
+    - name: Register on release server
+      shell: python
+      run: |
+        import asyncio
+        import sys
+        
+        import aiohttp
+
+        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-release')
+        from odrive.api_client import ApiClient
+        from private_release_api import PrivateReleaseApi
+        from odrive.crypto import safe_b64decode
+        
+        channel="0.5.4"
+
+        print("Channel:  ", channel)
+        print("Commit hash: ", '${{ github.sha }}')
+        print("Content key: ", '${{ steps.load-content-key.outputs.content-key }}')
+
+        async def main():
+          async with aiohttp.ClientSession() as session:
+            api_client = ApiClient(session, key='${{ inputs.odrive_api_key }}')
+            release_api = PrivateReleaseApi(api_client)
+
+            qualifiers = {}
+            if '${{ inputs.product }}':
+              qualifiers['product'] = '${{ inputs.product }}'
+            if '${{ inputs.app }}':
+              qualifiers['app'] = '${{ inputs.app }}'
+            if '${{ inputs.variant }}':
+              qualifiers['variant'] = '${{ inputs.variant }}'
+            
+            content_key = safe_b64decode('${{ steps.load-content-key.outputs.content-key }}')
+            await release_api.register_content('${{ inputs.release_type }}', '${{ github.sha }}', content_key, **qualifiers)
+            await release_api.register_commit('${{ inputs.release_type }}', channel, '${{ github.sha }}')
+            await release_api.refresh_routes('${{ inputs.release_type }}')
+
+        asyncio.run(main())
