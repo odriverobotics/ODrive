@@ -98,7 +98,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
                 
                 pip install --upgrade odrive
 
-    .. tab:: macOS
+    .. tab:: OSX
 
         We are going to run the following commands for installation in Terminal.
 
