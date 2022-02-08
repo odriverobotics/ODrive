@@ -15,8 +15,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('./figures'))
-sys.path.insert(0, os.path.abspath('../exts')) # needed for fibre_autodoc extension
-sys.path.insert(0, os.path.abspath('../../tools/fibre-tools')) # needed for fibre_autodoc extension
+sys.path.insert(0, os.path.abspath('./exts')) # needed for fibre_autodoc extension
+sys.path.insert(0, os.path.abspath('../tools/fibre-tools')) # needed for fibre_autodoc extension
 
 
 # -- Project information -----------------------------------------------------
@@ -66,7 +66,7 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-fibre_interface_files = ['../../Firmware/odrive-interface.yaml']
+fibre_interface_files = ['../Firmware/odrive-interface.yaml']
 
 autosummary_generate = False
 

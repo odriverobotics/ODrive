@@ -1,8 +1,0 @@
-theme: jekyll-theme-minimal
-exclude: [ruby-bundle, vendor]
-plugins:
-  - jekyll-redirect-from
-google_analytics: UA-93396600-3
-collections:
-  api:
-    output: true

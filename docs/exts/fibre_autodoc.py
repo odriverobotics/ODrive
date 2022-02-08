@@ -49,8 +49,8 @@ class MethodDocumenter(Documenter):
         return [
             '',
             '.. py:method:: ' + method.name + '(' + in_str + ')' + out_str,
-            *(['', '   ' + method.brief] if method.brief else []),
-            *(['', '   ' + method.doc] if method.doc else []),
+            *(['', *add_indent(method.brief.split('\n'))] if method.brief else []),
+            *(['', *add_indent(method.doc.split('\n'))] if method.doc else []),
             '',
             *(('   :param ' + registry.get_py_val_type_name(decl_ns_path, arg.type) + ' ' + arg.name + ':' + (' ' + arg.doc if arg.doc else '')) for arg in method.input_args),
             '',
@@ -65,8 +65,8 @@ class AttributeDocumenter(Documenter):
             '',
             '.. py:attribute:: ' + attr.name,
             '   :type: ' + registry.get_py_ref_type_name(decl_ns_path, attr.type),
-            *(['', '   ' + attr.brief] if attr.brief else []),
-            *(['', '   ' + attr.doc] if attr.doc else []),
+            *(['', *add_indent(attr.brief.split('\n'))] if attr.brief else []),
+            *(['', *add_indent(attr.doc.split('\n'))] if attr.doc else []),
             ''
         ]
 
@@ -197,6 +197,9 @@ class FibredocDirective(SphinxDirective):
         documenter = documenters[objtype]()
 
         registry = self.env.app.fibre_registry
+        
+        for file in self.config.fibre_interface_files:
+            self.env.note_dependency(file)
 
         decl_ns, obj = documenter.load_object(registry, self.arguments[0])
         lines = documenter.generate(registry, decl_ns.get_path()[:2], obj, self.options)
