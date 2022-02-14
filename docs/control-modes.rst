@@ -223,7 +223,7 @@ Set the control mode
     odrv0.axis0.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
 
 
-You can now control the torque (Nm) with 
+You can now control the torque (Nm) with e.g.
 
 .. code:: iPython
 
@@ -231,8 +231,14 @@ You can now control the torque (Nm) with
 
 
 .. note:: 
-    If you exceed :code:`vel_limit` in torque control mode, the current is reduced. 
-    To disable this, set 
+    For safety reasons, the torque mode velocity limiter is enabled by default.
+    This works by reducing the torque of the motor according to :code:`vel_limit` and :code:`vel_gain`, as shown below.
+    Please note that with the default settings, torque will limited even at 0 rpm.
+
+    .. figure:: figures/torque_mode_vel_limit.png
+        :alt: torque_mode_vel_limit
+
+    The torque mode velocity limiter can be completely disabled by setting:
 
     .. code:: iPython
         
