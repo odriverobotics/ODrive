@@ -128,7 +128,7 @@ class Loader():
                 if flag_data is None:
                     flag_data = {}
                 enum.enumerators.append(EnumeratorInfo(k,
-                    flag_data.get('bit', enum.get_next_value()),
+                    flag_data.get('value', enum.get_next_value()),
                     flag_data.get('brief', None),
                     flag_data.get('doc', None)
                 ))
