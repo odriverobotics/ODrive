@@ -42,6 +42,8 @@ Table of Contents
    Hoverboard Guide <hoverboard>
    migration
    CAN Guide <can-guide>
+   Motor Guide <https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0>
+   Encoder Guide <https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0>
 
 
 .. toctree::
