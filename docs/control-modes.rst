@@ -222,13 +222,18 @@ Set the control mode
     
     odrv0.axis0.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
 
+Set the torque constant, e.g.:
+
+.. code:: iPython
+    
+    # Approximately 8.23 / Kv where Kv is in the units [rpm / V]
+    odrv0.axis0.motor.config.torque_constant = 8.23 / 150
 
 You can now control the torque (Nm) with e.g.
 
 .. code:: iPython
 
     odrv0.axis0.controller.input_torque = 0.1
-
 
 .. note:: 
     For safety reasons, the torque mode velocity limiter is enabled by default.
