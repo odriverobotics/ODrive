@@ -23,7 +23,6 @@ CMD \
 	python ../tools/odrive/version.py \
 	--output autogen/version.c && \
 	# Regenerate python interface
-	mkdir ../Firmware/autogen; \
 	python interface_generator_stub.py \
 	--definitions odrive-interface.yaml \
 	--template ../tools/enums_template.j2 \
@@ -32,7 +31,6 @@ CMD \
 	--definitions odrive-interface.yaml \
 	--template ../tools/arduino_enums_template.j2 \
 	--output ../Arduino/ODriveArduino/ODriveEnums.h && \
-	python ../tools/odrive/version.py --output ../Firmware/autogen/version.c && \
 	# Hack around Tup's dependency on FUSE
 	tup init && \
 	tup generate build.sh && \
