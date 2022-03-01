@@ -50,6 +50,7 @@ Axis::Axis(int axis_num,
     max_endstop_.axis_ = this;
     decode_step_dir_pins();
     watchdog_feed();
+    run_watts_servo_updates(); // We need to open the lock mechanism ASAP so it doesn't jam the index search
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
@@ -464,7 +465,7 @@ bool Axis::run_idle_loop() {
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
         // Watts: Jake: update servo PWMs
-         run_watts_servo_updates();
+        run_watts_servo_updates();
         return true;
     });
     return check_for_errors();
