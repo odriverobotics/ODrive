@@ -63,7 +63,7 @@ interfaces:
               resistance. This extra resistance needs to be accounted for to
               prevent this voltage spike. If you have checked all your
               connections you can also try increasing your brake resistance by
-              ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake
+              ~ 0.01 ohm at a time to a maximum of 0.05 greater than your brake
               resistor value.
           DC_BUS_OVER_REGEN_CURRENT:
             doc: |
@@ -197,12 +197,18 @@ interfaces:
       otp_valid: readonly bool
         
     functions:
-      test_function: {in: {delta: int32}, out: {cnt: int32}}
-      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
+      test_function: {in: {delta: int32},out: {cnt: int32}}
+      get_adc_voltage: 
+        in: {gpio: uint32}
+        out: {voltage: float32}
+        doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
       save_configuration: {out: {success: bool}, doc: Saves the current configuration to non-volatile memory and reboots the board.}
       erase_configuration:
+        doc: Resets all `config` variables to their default values and reboots the controller
       reboot:
+        doc: Reboots the controller without saving the current configuraiton
       enter_dfu_mode:
+        doc:  Enters the Device Firmware Update mode
       get_interrupt_status:
         in: {irqn: {type: int32, doc: '-12...-1: processor interrupts, 0...239: NVIC interrupts'}}
         out:
@@ -320,10 +326,14 @@ interfaces:
       uart0_protocol: StreamProtocolType
       uart1_protocol: StreamProtocolType
       uart2_protocol: StreamProtocolType
-      max_regen_current: float32
+      max_regen_current: 
+        type: float32
+        unit: Amps
+        doc: |
+          The bus current allowed to flow back to the power supply before the brake resistor module will start shunting current.
       brake_resistance:
         type: float32
-        unit: Ohm
+        unit: ohm
         brief: Value of the brake resistor connected to the ODrive.
         doc: |
           If you set this to a lower value than the true brake resistance
@@ -394,7 +404,9 @@ interfaces:
         type: float32
         unit: A
         brief: Max current the power supply can sink.
-        doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
+        doc: |
+          You most likely want a non-positive value here. Set to -INFINITY to disable.
+          Note: This should be greater in magnitude than `max_regen_current`
 
       error_gpio_pin: {type: uint32}
 
@@ -411,7 +423,8 @@ interfaces:
         c_is_class: False
         attributes:
           baud_rate: {type: uint32, c_setter: 'set_baud_rate'}
-          protocol: Protocol
+          protocol:
+            type: Protocol
 
   ODrive.Endpoint:
     c_is_class: False
@@ -455,35 +468,49 @@ interfaces:
             doc: There isn't a valid position estimate available.
       step_dir_active: readonly bool
       last_drv_fault: readonly uint32
-      steps: readonly int64
-      current_state: readonly AxisState
-      requested_state: AxisState
-      is_homed: {type: bool, c_name: homing_.is_homed}
+      steps: 
+        type: readonly int64
+        brief: The current commanded position, in steps, while in `step_dir` mode
+      current_state: 
+        type: readonly AxisState
+        brief: The current state of the axis
+      requested_state: 
+        type: AxisState
+        brief: The user's commanded axis state
+        doc: |
+          This is used to command the axis to change state or perform certain routines.
+          Values input here will be "consumed" and queued by the state machine handler.  Thus, reading this value back will usually show `UNDEFINED` (0).
+      is_homed: 
+        type: bool
+        c_name: homing_.is_homed
+        brief: Whether or not the axis has been successfully homed.
       config:
         c_is_class: False
         attributes:
           startup_motor_calibration:
             type: bool
-            doc: run motor calibration at startup, skip otherwise
+            doc: Run motor calibration at startup, skip otherwise
           startup_encoder_index_search:
             type: bool
-            doc: run encoder index search after startup, skip otherwise this only has an effect if encoder.config.use_index is also true
+            doc: Run encoder index search after startup, skip otherwise this only has an effect if encoder.config.use_index is also true
           startup_encoder_offset_calibration:
             type: bool
-            doc: run encoder offset calibration after startup, skip otherwise
+            doc: Run encoder offset calibration after startup, skip otherwise
           startup_closed_loop_control:
             type: bool
-            doc: enable closed loop control after calibration/startup
+            doc: Enable closed loop control after calibration/startup
           startup_homing:
             type: bool
-            doc: enable homing after calibration/startup
+            doc: Enable homing after calibration/startup
           enable_step_dir:
             type: bool
-            doc: Enable step/dir input after calibration.
+            doc: |
+              Enable step/dir input after calibration.
               Make sure to set the corresponding GPIO's mode to `GPIO_MODE_DIGITAL`.
           step_dir_always_on:
             type: bool
-            doc: Keep step/dir enabled while the motor is disabled.
+            doc: |
+              Keep step/dir enabled while the motor is disabled.
               This is ignored if enable_step_dir is false.
               This setting only takes effect on a state transition
               into idle or out of closed loop control.
@@ -742,9 +769,13 @@ interfaces:
       DC_calib_phA: {type: float32, c_name: DC_calib_.phA}
       DC_calib_phB: {type: float32, c_name: DC_calib_.phB}
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
-      I_bus: {type: readonly float32, unit: A}
+      I_bus: {type: readonly float32, unit: A, doc: The current in the ODrive DC bus.  This is also the current seen by the power supply in most systems.}
       phase_current_rev_gain: float32
-      effective_current_lim: readonly float32
+      effective_current_lim: 
+        type: readonly float32
+        unit: A
+        doc: |
+          This value is the internally-limited value of phase current allowed according to the set current limit and the FET and Motor thermistor limits.
       max_allowed_current:
         type: readonly float32
         unit: A
@@ -769,9 +800,21 @@ interfaces:
           phase_vel: {type: readonly float32, c_getter: 'phase_vel_.value_or(0.0f)'}
           Ialpha_measured: {type: readonly float32, c_getter: 'Ialpha_beta_measured_.value_or(float2D{0.0f, 0.0f}).first'}
           Ibeta_measured: {type: readonly float32, c_getter: 'Ialpha_beta_measured_.value_or(float2D{0.0f, 0.0f}).second'}
-          Id_measured: readonly float32
-          Iq_measured: readonly float32
-          power: readonly float32
+          Id_measured: 
+            type: readonly float32
+            unit: A
+            doc: |
+              The phase current measured along the "d" axis in the FOC control loop.  This should be close to 0 for typical surface permanent magnet motors.
+          Iq_measured: 
+            type: readonly float32
+            unit: A
+            doc: |
+              The phase current measured along the "q" axis in the FOC control loop.  This is the torque-generating current, so motor torque is approx. `torque_constant * Iq_measured`
+          power: 
+            type: readonly float32
+            unit: W
+            doc: |
+              The electrical power being delivered to the motor
           v_current_control_integral_d: float32
           v_current_control_integral_q: float32
           final_v_alpha: readonly float32
@@ -782,28 +825,73 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
-          pole_pairs: int32
-          calibration_current: float32
-          resistance_calib_max_voltage: float32
-          phase_inductance: {type: float32, c_setter: set_phase_inductance}
-          phase_resistance: {type: float32, c_setter: set_phase_resistance}
-          torque_constant: float32
+          pre_calibrated: 
+            type: bool
+            c_setter: set_pre_calibrated
+            doc: |
+              Indicates to the ODrive that the parameters `config.phase_resistance` and `config.phase_inductance` are valid at system start.
+              If these are valid and `pre_calibrated` is set to `True`, motor calibration can be skipped.
+          pole_pairs: 
+            type: int32
+            doc: |
+              The number of pole pairs in the motor.
+              Note this is equal to 1/2 of the number of magnets (not coils!) in a typical hobby motor.
+          calibration_current:
+            type: float32
+            doc: The current used to measure resistance during `AXIS_STATE_MOTOR_CALIBRATION`.
+          resistance_calib_max_voltage: 
+            type: float32
+            doc: |
+              The maximum voltage allowed during `AXIS_STATE_MOTOR_CALIBRATION`.
+              This should be set to less than `(0.5 * vbus_voltage)`, but high enough to satisfy V=IR during motor calibration, where I is `config.calibration_current` and R is `config.phase_resistance`
+          phase_inductance: {type: float32, unit: henry, c_setter: set_phase_inductance}
+          phase_resistance: {type: float32, unit: ohm, c_setter: set_phase_resistance}
+          torque_constant: {type: float32, unit: N·m/A}
           motor_type: MotorType
-          current_lim: float32
-          current_lim_margin: float32
-          torque_lim: float32
-          inverter_temp_limit_lower: float32
-          inverter_temp_limit_upper: float32
-          requested_current_range: float32
-          current_control_bandwidth: {type: float32, c_setter: set_current_control_bandwidth}
+          current_lim: 
+            type: float32
+            unit: A
+            doc: Maximum commanded current allowed
+          current_lim_margin: 
+            type: float32
+            unit: A
+            doc: Maximum measured current allowed above `current_lim`.  Any value above `current_lim + curren_lim_margin` will throw a `CURRENT_LIMIT_VIOLATION` error.
+          torque_lim: 
+            type: float32
+            unit: N·m
+            doc: Maximum commanded torque allowed in the torque loop.
+          inverter_temp_limit_lower: 
+            type: float32
+            unit: °C
+            doc: Not implemented.
+          inverter_temp_limit_upper: 
+            type: float32
+            unit: °C
+            doc: Not implemented.
+          requested_current_range:
+            type: float32
+            unit: A
+            doc: |
+              The minimum phase current range expected to be measured.  This is used to set the current shunt amplifier gains.
+              This should be set > `current_lim + curren_lim_margin`, but as low as possible to maximize precision and accuracy of the controller.
+          current_control_bandwidth: 
+            type: float32
+            c_setter: set_current_control_bandwidth
+            unit: rad/s
+            doc: |
+              Sets the PI gains of the Q and D axis FOC control according to `phase_resistance` and `phase_inductance` to create a critically-damped controller with a -3dB
+              bandwidth at this frequency.
           acim_gain_min_flux: float32
           acim_autoflux_min_Id: float32
           acim_autoflux_enable: bool
           acim_autoflux_attack_gain: float32
           acim_autoflux_decay_gain: float32
-          R_wL_FF_enable: bool
-          bEMF_FF_enable: bool
+          R_wL_FF_enable: 
+            type: bool
+            doc: Enables automatic feedforward of the R*wL term in the current controller.
+          bEMF_FF_enable: 
+            type: bool
+            doc: Enables automatic feedforward of the bEMF term in the current controller.
           I_bus_hard_min:
             type: float32
             unit: A
@@ -895,10 +983,15 @@ interfaces:
               give desired behavior. For example, in position *control mode*, the position filter *input mode* will
               smooth out `input_pos` commands to give smoother motion.
           UNSTABLE_GAIN:
+            doc: "`motor.config.bandwidth` was set too high to create a stable controller."
           INVALID_MIRROR_AXIS:
+            doc: An invalid `axis_to_mirror` was selected
           INVALID_LOAD_ENCODER:
+            doc: An invalid `load_encoder_axis` was selected
           INVALID_ESTIMATE:
+            doc: Indicates the encoder estimation module declined to output a linear position or velocity value and the exception was caught.
           INVALID_CIRCULAR_RANGE:
+            doc: Indicates the encoder estimation module declined to output a circular position value and the exception was caught.
           SPINOUT_DETECTED:
             doc: |
               The motor mechanical power and electrical power do not agree. This is usually
@@ -911,17 +1004,47 @@ interfaces:
         type: float32
         unit: turn
         c_setter: set_input_pos
+        doc: |
+          Set the desired position of the axis.  Only valid in `CONTROL_MODE_POSITION_CONTROL`.startup.
+          In `INPUT_MODE_TUNING`, this acts as a DC offset for the position sine wave.
       input_vel:
         type: float32
         unit: turn/s
-      input_torque: float32
-      pos_setpoint: readonly float32
-      vel_setpoint: readonly float32
-      torque_setpoint: readonly float32
-      trajectory_done: readonly bool
-      vel_integrator_torque: float32
+        doc: |
+          In `CONTROL_MODE_VELOCITY_CONTROL`, sets the desired velocity of the axis.
+          In `CONTROL_MODE_POSITION_CONTROL`, sets the feed-forward velocity of the velocity controller
+          In `INPUT_MODE_TUNING`, this acts as a DC offset for the velocity sine wave.
+      input_torque:
+        type: float32
+        unit: N·m
+        doc: |
+          In `CONTROL_MODE_TORQUE_CONTROL`, sets the desired output torque of the axis.
+          In `CONTROL_MODE_VELOCITY_CONTROL` and `CONTROL_MODE_POSITION_CONTROL`, sets the feed-forward torque of the torque controller.
+          In `INPUT_MODE_TUNING`, this acts as a DC offset for the torque sine wave.
+      pos_setpoint:
+        type: readonly float32
+        unit: turn
+        doc: The position reference actually being used by the position controller.  This is the same as `input_pos` in `INPUT_MODE_PASSTHROUGH`, but may vary according to `InputMode`.
+      vel_setpoint:
+        type: readonly float32
+        unit: turn/s
+        doc: The velocity reference actually being used by the velocity controller.  This is the same as `input_vel` in `INPUT_MODE_PASSTHROUGH`, but may vary according to `InputMode`.
+      torque_setpoint: 
+        type: readonly float32
+        unit: N·m
+        doc: The torque reference actually being used by the torque controller.  This is the same as `input_vel` in `INPUT_MODE_PASSTHROUGH`, but may vary according to `InputMode`.
+      trajectory_done: 
+        type: readonly bool
+        doc: Indicates the last commanded Trapezoidal Trajectory movement is complete.
+      vel_integrator_torque: 
+        type: float32
+        unit: N·m
+        doc: The accumulated value of the velocity loop integrator
       anticogging_valid: bool
-      autotuning_phase: float32
+      autotuning_phase: 
+        type: float32
+        unit: rad
+        doc: The current phase angle of the `INPUT_MODE_TUNING` sine wave generator
       config:
         c_is_class: False
         attributes:
@@ -930,8 +1053,14 @@ interfaces:
           enable_torque_mode_vel_limit:
             type: bool
             doc: Enable velocity limit in torque control mode (requires a valid velocity estimator).
-          enable_gain_scheduling: bool
-          enable_overspeed_error: bool
+          enable_gain_scheduling: 
+            type: bool
+            doc: |
+              Enable the experimental "gain scheduling" module, which reduces the `pos_gain`, `vel_gain`, and `vel_integrator_gain` according to the position error.
+              Also known as "anti-hunt"
+          enable_overspeed_error: 
+            type: bool
+            doc: Enables the velocity controller's overspeed error
           control_mode: ControlMode
           input_mode: InputMode
           pos_gain:
@@ -940,16 +1069,16 @@ interfaces:
             doc: units = (turn/s) / turn
           vel_gain:
             type: float32
-            unit: Nm / (turn/s)
-            doc: units = Nm / (turn/s)
+            unit: N·m / (turn/s)
+            doc: units = N·m / (turn/s)
           vel_integrator_gain:
             type: float32
-            unit: Nm / (turn/s * s)
-            doc: units = Nm / (turn/s * s)
+            unit: N·m / (turn/s * s)
+            doc: units = N·m / (turn/s * s)
           vel_integrator_limit:
             type: float32
-            unit: Nm
-            doc: Limit the integrator output (independent of proportional gain output). Set to infinity to disable. Units = Nm
+            unit: N·m
+            doc: Limit the integrator output (independent of proportional gain output). Set to infinity to disable. Units = N·m
           vel_limit:
             type: float32
             unit: turn/s
@@ -962,7 +1091,7 @@ interfaces:
             unit: turn/s^2
           torque_ramp_rate:
             type: float32
-            unit: Nm / sec
+            unit: N·m / sec
           circular_setpoints:
             type: bool
           circular_setpoint_range:
@@ -974,21 +1103,30 @@ interfaces:
             c_setter: set_steps_per_circular_range
           homing_speed:
             type: float32
-            unit: turns/s
+            unit: turn/s
+            doc: The speed at which the axis moves towards the `min_endstop` during `AXIS_STATE_HOMING`
           inertia:
             type: float32
-            unit: Nm/(turn/s^2)
-          axis_to_mirror: uint8
-          mirror_ratio: float32
-          torque_mirror_ratio: float32
+            unit: N·m/(turn/s^2)
+          axis_to_mirror: 
+            type: uint8
+            doc: The axis used for mirroring when in `INPUT_MODE_MIRROR`
+          mirror_ratio: 
+            type: float32
+            doc: The ratio applied to position and velocity movements of the mirrored axis.  To reverse movements, use a negative value
+          torque_mirror_ratio: 
+            type: float32
+            doc: The ratio applied to torque values of the mirrored axis.
           load_encoder_axis:
             type: uint8
             # TODO: this is meaningless for a user. Should there be a separate developer note?
             doc: Default depends on Axis number and is set in load_configuration()
           input_filter_bandwidth:
             type: float32
-            unit: 1/s
+            unit: rad/s
             c_setter: set_input_filter_bandwidth
+            brief: The desired bandwidth for `INPUT_MODE_POS_FILTER`.
+            doc: Sets the position filter's P and I gains to emulate a critically-damped 2nd order mass-spring-damper motion.
           anticogging:
             c_is_class: False
             attributes:
@@ -1022,7 +1160,7 @@ interfaces:
           frequency: {type: float32, unit: Hz}
           pos_amplitude: {type: float32, unit: turns}
           vel_amplitude: {type: float32, unit: turns/sec}
-          torque_amplitude: {type: float32, unit: N-m}
+          torque_amplitude: {type: float32, unit: N·m}
       mechanical_power:
         type: readonly float32
         unit: Watt
@@ -1030,7 +1168,7 @@ interfaces:
       electrical_power:
         type: readonly float32
         unit: Watt
-        doc: "Electrical power estimate. Vdq dot Idq"
+        doc: "Electrical power estimate. Vdq·Idq"
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
@@ -1128,8 +1266,8 @@ interfaces:
       vel_estimate: 
         type: readonly float32
         c_getter: vel_estimate_.any().value_or(0.0f)
-        unit: turns/s
-        doc: Estimate of the linear velocity of an axis in turns/s
+        unit: turn/s
+        doc: Estimate of the linear velocity of an axis in turn/s
       vel_estimate_counts: 
         type: readonly float32
         unit: counts/sec
@@ -1143,22 +1281,56 @@ interfaces:
         c_is_class: False
         attributes:
           mode: Mode
-          use_index: {type: bool, c_setter: set_use_index}
-          index_offset: float32
-          use_index_offset: bool
-          find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
-          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
-          cpr: int32
+          use_index: 
+            type: bool
+            c_setter: set_use_index
+            doc: Set this to `True` when using an encoder with an index pin to allow pre-calibration of the encoder and encoder index search.
+          index_offset:
+            type: float32
+            doc: When the index is found, the linear position of the axis will be set to this value if `use_index_offset` is set to `True`.
+          use_index_offset: 
+            type: bool
+            doc: Set this to `True` to have the axis set the linear position of the axis to `index_offset` when the index is found during encoder index search
+          find_idx_on_lockin_only: 
+            type: bool
+            c_setter: set_find_idx_on_lockin_only
+          abs_spi_cs_gpio_pin: 
+            type: uint16
+            c_setter: set_abs_spi_cs_gpio_pin
+            doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.
+          cpr: 
+            type: int32
+            doc: Counts per Revolution of the encoder.  This is 4x the Pulses per Revolution.
           phase_offset: int32
           phase_offset_float: float32
           direction: int32
           pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           enable_phase_interpolation: bool
-          bandwidth: {type: float32, c_setter: set_bandwidth}
-          calib_range: float32
-          calib_scan_distance: float32
-          calib_scan_omega: float32
-          ignore_illegal_hall_state: bool
+          bandwidth: 
+            type: float32
+            c_setter: set_bandwidth
+            unit: rad/s
+          calib_range: 
+            type: float32
+            unit: turn
+            doc: The error threshold for encoder offset calibration, in turns.  If the
+          calib_scan_distance: 
+            type: float32
+            unit: rad (electrical)
+            doc: |
+              The distance the motor is turned during encoder offset calibration.
+              This is in the electrical frame, so if you want a 7pp motor to turn 1 mechanical revolution, you would put `(7 * 2*pi)`
+            default: 16pi rad
+          calib_scan_omega: 
+            type: float32
+            unit: rad/s (electrical)
+            doc: |
+              The speed the motor turns during encoder offset calibration.
+              This is in the electrical frame, so a 7pp motor rotating 1 mechanical revolution in 2 sec would be set to `(7 * 2*pi) / 2`
+            default: 4pi rad/s
+          ignore_illegal_hall_state: 
+            type: bool
+            doc: Ignore the error "Illegal Hall State"
           hall_polarity: uint8
           hall_polarity_calibrated: bool
           sincos_gpio_pin_sin:
@@ -1168,7 +1340,12 @@ interfaces:
             type: uint16
             doc: Analog cosine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
     functions:
-      set_linear_count: {in: {count: int32}}
+      set_linear_count:
+        in:
+          count: 
+            type: int32
+            unit: counts
+        doc: Set the current linear position of the axis, in counts
 
 
   ODrive.SensorlessEstimator:
@@ -1182,7 +1359,7 @@ interfaces:
       phase: {type: readonly float32, unit: rad, c_getter: phase_.any().value_or(0.0f)}
       pll_pos: {type: readonly float32, unit: rad}
       phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.any().value_or(0.0f)}
-      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, unit: turn/s, c_getter: vel_estimate_.any().value_or(0.0f)}
       # pll_kp: float32
       # pll_ki: float32
       config:
@@ -1199,9 +1376,9 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          vel_limit: float32
-          accel_limit: float32
-          decel_limit: float32
+          vel_limit: {type: float32, unit: turn/s}
+          accel_limit: {type: float32, unit: turn/s^2}
+          decel_limit: {type: float32, unit: turn/s^2}
 
   ODrive.Endstop:
     c_is_class: True
@@ -1212,7 +1389,7 @@ interfaces:
         attributes:
           gpio_num: {type: uint16, c_setter: set_gpio_num, doc: Make sure the corresponding GPIO is in `GPIO_MODE_DIGITAL`.}
           enabled: {type: bool, c_setter: set_enabled}
-          offset: float32
+          offset: {type: float32, unit: turns}
           is_active_high: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
@@ -1391,16 +1568,16 @@ valuetypes:
       SINCOS:
       SPI_ABS_CUI:
         value: 0x100
-        doc: compatible with CUI AMT23xx
+        doc: Compatible with CUI AMT23xx
       SPI_ABS_AMS:
         value: 0x101
-        doc: compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
+        doc: Compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
       SPI_ABS_AEAT:
         value: 0x102
-        doc: not yet implemented
+        doc: Supports AEAT-8800
       SPI_ABS_RLS:
         value: 0x103
-        doc: RLS Encoders
+        doc: Supports RLS Orbis Encoders
       SPI_ABS_MA732:
         value: 0x104
         doc: MagAlpha MA732 magnetic encoder
@@ -1410,10 +1587,22 @@ valuetypes:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.
       VOLTAGE_CONTROL:
-        doc: this one is not normally used
+        doc: |
+          Note: This mode is not used internally.  For voltage-only FOC, use `MotorType.GIMBAL`
       TORQUE_CONTROL:
+        doc: |
+          Uses only the inner torque control loop.
+          Use `input_torque` to command desired torque.
+          Note the setting `motor.config.torque_constant`.
+          Note the setting `enable_torque_mode_vel_limit`.
       VELOCITY_CONTROL:
+        doc: |
+          Uses both the inner torque control loop and the velocity control loop.
+          Use `input_vel` to command desired velocity, and `input_torque`.
       POSITION_CONTROL:
+        doc: |
+          Uses the inner torque loop, the velocity control loop, and the outer position control loop.
+          Use `input_pos` to command desired position, `input_vel` to command velocity feed-forward, and `input_torque` for torque feed-forward.
 
   ODrive.Controller.InputMode:
     values:
@@ -1436,8 +1625,8 @@ valuetypes:
         brief: Ramps a velocity command from the current value to the target value.
         doc: |
           ### Configuration Values:
-          * `config.vel_ramp_rate` [turn/sec]
-          * `config.inertia` [Nm/(turn/s^2))]
+          * `config.vel_ramp_rate` [turn/s]
+          * `config.inertia` [N·m/(turn/s^2))]
 
           ### Valid inputs:
           * `input_vel`
@@ -1520,6 +1709,15 @@ valuetypes:
   ODrive.Motor.MotorType:
     values:
       HIGH_CURRENT:
+        doc: |
+          Used for all standard "hobby-style" motors Permanant Magnet AC (PMAC) or Brushless DC (BLDC) motors.  This is the default.
+          Note: Assumes sinusoidal back-EMF, "wye" connected motors.  Trapezoidal bEMF may have reduced controllability.
       #LowCurrent: # not implemented
-      GIMBAL: {value: 2}
+      GIMBAL:
+        value: 2
+        doc: |
+          Enables voltage-only FOC where V=IR can be assumed to be correct.
+          Used for high-phase-resistance motors (> 1 ohm), which are typically sold as "Gimbal" motors.
       ACIM:
+        doc: |
+          Used for FOC control of AC Induction Motors (ACIM), aka Asynchronous motors, 
