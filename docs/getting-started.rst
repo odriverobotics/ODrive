@@ -352,7 +352,7 @@ Negative Current
 *********************************************************************************
 
 This is the amount of current [Amps] allowed to flow back into the power supply. The convention is that it is negative. By default, it is set to a conservative value of 10mA. If you are using a brake resistor and getting :code:`DC_BUS_OVER_REGEN_CURRENT` errors, raise it slightly. 
-If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source. Note that in that case, it should be higher than your motor current limit + current limit margin.
+If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source.
 
 .. code:: iPython
 
