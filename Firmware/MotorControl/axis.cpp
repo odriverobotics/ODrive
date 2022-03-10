@@ -487,11 +487,19 @@ void Axis::run_watts_servo_updates()
         servo2_input_updated_ = false;
     }
 
-    // Also check if button is pressed and update the state (GPIO8)
-    uint16_t gpio_pin = get_gpio_pin_by_pin(8);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(8);
-    int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-    set_load_button_pressed(pin_state == 0);
+    // Also check if buttons (GPIO7 and GPIO8) are pressed and update the states
+    {
+        uint16_t gpio_pin = get_gpio_pin_by_pin(7);
+        GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(7);
+        int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        set_eject_button_pressed(pin_state == 0);
+    }
+    {
+        uint16_t gpio_pin = get_gpio_pin_by_pin(8);
+        GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(8);
+        int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        set_load_button_pressed(pin_state == 0);
+    }
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate

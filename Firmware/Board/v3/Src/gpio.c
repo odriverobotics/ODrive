@@ -119,10 +119,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(EN_GATE_GPIO_Port, &GPIO_InitStruct);
 
+  // Watts: configured as pullup
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = GPIO_7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIO_7_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PtPin */
@@ -131,6 +132,7 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(nFAULT_GPIO_Port, &GPIO_InitStruct);
 
+  // Watts: configured as pullup
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = GPIO_8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;

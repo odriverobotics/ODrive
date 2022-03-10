@@ -297,6 +297,7 @@ interfaces:
         type: float32
         unit: us
         c_setter: set_servo2_input
+      eject_button_pressed: readonly bool
       load_button_pressed: readonly bool
       step_dir_active: readonly bool
       current_state: readonly AxisState
