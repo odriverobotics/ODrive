@@ -107,7 +107,7 @@ The three (starting) values are:
 
     .. code:: iPython
         
-        odrv0.axis0..controller.config.vel_gain = 0.16
+        odrv0.axis0.controller.config.vel_gain = 0.16
 
 * vel_integrator_gain [Nm/((turn/s) * s)]:
 
