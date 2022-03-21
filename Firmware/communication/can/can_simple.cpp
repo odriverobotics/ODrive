@@ -253,7 +253,7 @@ bool CANSimple::get_encoder_count_callback(const Axis& axis) {
 }
 
 void CANSimple::set_input_pos_callback(Axis& axis, const can_Message_t& msg) {
-    axis.controller_.input_pos_ = can_getSignal<float>(msg, 0, 32, true);
+    axis.controller_.set_input_pos_and_steps(can_getSignal<float>(msg, 0, 32, true));
     axis.controller_.input_vel_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.001f, 0);
     axis.controller_.input_torque_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.001f, 0);
     axis.controller_.input_pos_updated();

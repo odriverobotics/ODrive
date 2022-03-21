@@ -87,6 +87,12 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     }
 }
 
+void Controller::set_input_pos_and_steps(float const pos) {
+    input_pos_ = pos;
+    float const range = config_.circular_setpoint_range;
+    axis_->steps_ = (int64_t)(wrap_pm(pos, range) / range * config_.steps_per_circular_range);
+}
+
 void Controller::update_filter_gains() {
     float bandwidth = std::min(config_.input_filter_bandwidth, 0.25f * current_meas_hz);
     input_filter_ki_ = 2.0f * bandwidth;  // basic conversion to discrete time

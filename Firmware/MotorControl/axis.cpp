@@ -295,9 +295,7 @@ bool Axis::start_closed_loop_control() {
                 return false;
             } else {
                 controller_.pos_setpoint_ = *pos_init;
-                controller_.input_pos_ = *pos_init;
-                float range = controller_.config_.circular_setpoint_range;
-                steps_ = (int64_t)(fmodf_pos(*pos_init, range) / range * controller_.config_.steps_per_circular_range);
+                controller_.set_input_pos_and_steps(*pos_init);
             }
         }
         controller_.input_pos_updated();

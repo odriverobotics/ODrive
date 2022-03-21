@@ -80,6 +80,8 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
+    void set_input_pos_and_steps(float pos);
+
     void update_filter_gains();
     bool update();
 
