@@ -18,7 +18,7 @@ print("Waiting for calibration to finish...")
 while True:
     msg = bus.recv()
     if msg.arbitration_id == (axisID << 5 | 0x01):
-        current_state = msg.data[4] | msg.data[5] << 8 | msg.data[6] << 16 | msg.data[7] << 24
+        current_state = msg.data[4]
         if current_state == 0x1:
             print("\nAxis has returned to Idle state.")
             break
