@@ -439,8 +439,11 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         MEASURE_TIME(axis.task_times_.sensorless_estimator_update)
             axis.sensorless_estimator_.update();
 
-        MEASURE_TIME(axis.task_times_.controller_update)
-            axis.controller_.update(); // uses position and velocity from encoder
+        MEASURE_TIME(axis.task_times_.controller_update) {
+            if (!axis.controller_.update()) { // uses position and velocity from encoder
+                axis.error_ |= Axis::ERROR_CONTROLLER_FAILED;
+            }
+        }
 
         MEASURE_TIME(axis.task_times_.open_loop_controller_update)
             axis.open_loop_controller_.update(timestamp);

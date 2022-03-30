@@ -29,6 +29,7 @@ bool SensorlessEstimator::update() {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp < 1.0f)) {
         error_ |= ERROR_UNSTABLE_GAIN;
+        axis_->error_ |= Axis::ERROR_SENSORLESS_ESTIMATOR_FAILED;
         reset(); // Reset state for when the next valid current measurement comes in.
         return false;
     }
@@ -43,6 +44,7 @@ bool SensorlessEstimator::update() {
     }
     if (!current_meas.has_value()) {
         error_ |= ERROR_UNKNOWN_CURRENT_MEASUREMENT;
+        axis_->error_ |= Axis::ERROR_SENSORLESS_ESTIMATOR_FAILED;
         reset(); // Reset state for when the next valid current measurement comes in.
         return false;
     }
