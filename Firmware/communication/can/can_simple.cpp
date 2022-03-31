@@ -319,11 +319,12 @@ bool CANSimple::get_iq_callback(const Axis& axis) {
     if (!Idq_setpoint.has_value()) {
         Idq_setpoint = {0.0f, 0.0f};
     }
+    float iq_setpoint = Idq_setpoint->second;
 
-    static_assert(sizeof(float) == sizeof(Idq_setpoint->first));
-    static_assert(sizeof(float) == sizeof(Idq_setpoint->second));
-    can_setSignal<float>(txmsg, Idq_setpoint->first, 0, 32, true);
-    can_setSignal<float>(txmsg, Idq_setpoint->second, 32, 32, true);
+    float iq_measured = axis.motor_.current_control_.Iq_measured_;
+
+    can_setSignal<float>(txmsg, iq_setpoint, 0, 32, true);
+    can_setSignal<float>(txmsg, iq_measured, 32, 32, true);
 
     return canbus_->send_message(txmsg);
 }
