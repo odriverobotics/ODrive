@@ -269,7 +269,20 @@ void CANSimple::set_input_torque_callback(Axis& axis, const can_Message_t& msg) 
 }
 
 void CANSimple::set_controller_modes_callback(Axis& axis, const can_Message_t& msg) {
-    axis.controller_.config_.control_mode = static_cast<Controller::ControlMode>(can_getSignal<int32_t>(msg, 0, 32, true));
+
+    Controller::ControlMode const mode = static_cast<Controller::ControlMode>(can_getSignal<int32_t>(msg, 0, 32, true));
+    if (mode == Controller::CONTROL_MODE_POSITION_CONTROL) {
+        float estimate = 0.0f;
+        if (axis.controller_.config_.circular_setpoints) {
+            estimate = axis.encoder_.pos_circular_.any().value_or(0.0f);
+        } else {
+            estimate = axis.encoder_.pos_estimate_.any().value_or(0.0f);
+        }
+
+        axis.controller_.set_input_pos_and_steps(estimate);
+    }
+
+    axis.controller_.config_.control_mode = static_cast<Controller::ControlMode>(mode);
     axis.controller_.config_.input_mode = static_cast<Controller::InputMode>(can_getSignal<int32_t>(msg, 32, 32, true));
 }
 
