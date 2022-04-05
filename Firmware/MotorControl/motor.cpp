@@ -339,6 +339,7 @@ bool Motor::setup() {
 
 void Motor::disarm_with_error(Motor::Error error){
     error_ |= error;
+    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
     last_error_time_ = odrv.n_evt_control_loop_ * current_meas_period;
     disarm();
 }

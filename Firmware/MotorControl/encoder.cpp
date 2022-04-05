@@ -70,6 +70,7 @@ void Encoder::set_error(Error error) {
     vel_estimate_valid_ = false;
     pos_estimate_valid_ = false;
     error_ |= error;
+    axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
 
 bool Encoder::do_checks(){

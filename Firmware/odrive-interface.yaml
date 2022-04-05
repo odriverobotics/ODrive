@@ -446,6 +446,13 @@ interfaces:
               tried to run encoder calibration or closed loop control before the
               motor was calibrated, or you tried to run closed loop control
               before the encoder was calibrated.
+          MOTOR_FAILED:
+            bit: 6
+            doc: Check `motor.error` for more information.
+          SENSORLESS_ESTIMATOR_FAILED:
+          ENCODER_FAILED:
+            doc: Check `encoder.error` for more information.
+          CONTROLLER_FAILED:
           WATCHDOG_TIMER_EXPIRED:
             bit: 11
             brief: The axis watchdog timer expired.
