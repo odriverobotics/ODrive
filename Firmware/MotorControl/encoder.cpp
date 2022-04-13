@@ -235,7 +235,7 @@ bool Encoder::run_hall_polarity_calibration() {
             if (states_seen_count_[i] > 50)
                 state_confirmed[i] = true;
         }
-        if (!(state_seen == state_confirmed)) {
+        if (!(state_seen == state_confirmed) && !config_.ignore_illegal_hall_state) {
             set_error(ERROR_ILLEGAL_HALL_STATE);
             return false;
         }
@@ -257,7 +257,7 @@ bool Encoder::run_hall_polarity_calibration() {
             hall_polarity = 0b010;
         } else if (flip_detect(states, 3)) {
             hall_polarity = 0b100;
-        } else {
+        } else if (!config_.ignore_illegal_hall_state){
             set_error(ERROR_ILLEGAL_HALL_STATE);
             return false;
         }
@@ -678,7 +678,7 @@ bool Encoder::update() {
                                 edge_idx = hall_cnt;
                             } else if (mod_hall_cnt == 5) { // counted down
                                 edge_idx = last_hall_cnt_.value();
-                            } else {
+                            } else if(!config_.ignore_illegal_hall_state){
                                 set_error(ERROR_ILLEGAL_HALL_STATE);
                                 return false;
                             }
