@@ -144,6 +144,12 @@ The CANH and CANL pins on J2 are used for CAN communication.  Connect CANH to CA
 If your ODrive is the "last" (furthest) device on the bus, you can use the on-board 120 Ohm termination resistor by switching the DIP switch to "CAN 120R". 
 Otherwise, add an external resistor.
 
+Follow this recommended wiring schematic for non-isolated systems (most systems):
+
+.. image:: figures/Non_Isolated_CAN_Wiring.png
+    :scale: 60 %
+    :align: center
+    :alt: CAN Wiring
 
 
 Verifying Communcation
