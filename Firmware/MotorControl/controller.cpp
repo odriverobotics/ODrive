@@ -89,9 +89,14 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 
 void Controller::set_input_pos_and_steps(float const pos) {
     input_pos_ = pos;
-    float const range = config_.circular_setpoint_range;
-    axis_->steps_ = (int64_t)(fmodf_pos(pos, range) / range * config_.steps_per_circular_range);
+    if (config_.circular_setpoints) {
+        float const range = config_.circular_setpoint_range;
+        axis_->steps_ = (int64_t)(fmodf_pos(pos, range) / range * config_.steps_per_circular_range);
+    } else {
+        axis_->steps_ = (int64_t)(pos * config_.steps_per_circular_range);
+    }
 }
+
 
 void Controller::update_filter_gains() {
     float bandwidth = std::min(config_.input_filter_bandwidth, 0.25f * current_meas_hz);
@@ -115,11 +120,15 @@ bool Controller::update() {
     std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
 
     if (axis_->step_dir_active_) {
-        if (!pos_wrap.has_value()) {
-            set_error(ERROR_INVALID_CIRCULAR_RANGE);
-            return false;
+        if (config_.circular_setpoints) {
+            if (!pos_wrap.has_value()) {
+                set_error(ERROR_INVALID_CIRCULAR_RANGE);
+                return false;
+            }
+            input_pos_ = (float)(axis_->steps_ % config_.steps_per_circular_range) * (*pos_wrap / (float)(config_.steps_per_circular_range));
+        } else {
+            input_pos_ = (float)(axis_->steps_) / (float)(config_.steps_per_circular_range);
         }
-        input_pos_ = (float)(axis_->steps_ % config_.steps_per_circular_range) * (*pos_wrap / (float)(config_.steps_per_circular_range));
     }
 
     if (config_.anticogging.calib_anticogging) {
