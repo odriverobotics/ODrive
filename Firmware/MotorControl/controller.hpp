@@ -81,6 +81,7 @@ public:
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     void set_input_pos_and_steps(float pos);
+    bool set_setpoint_to_estimate();
 
     void update_filter_gains();
     bool update();
@@ -124,7 +125,7 @@ public:
     OutputPort<float> torque_output_ = 0.0f;
 
     // custom setters
-    void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
+    void set_input_pos(float value) { set_input_pos_and_steps(value); input_pos_updated(); }
 };
 
 #endif // __CONTROLLER_HPP

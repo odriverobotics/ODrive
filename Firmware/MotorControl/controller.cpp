@@ -97,6 +97,19 @@ void Controller::set_input_pos_and_steps(float const pos) {
     }
 }
 
+bool Controller::set_setpoint_to_estimate() {
+    std::optional<float> estimate = (config_.circular_setpoints ?
+                            pos_estimate_circular_src_ :
+                            pos_estimate_linear_src_).any();
+    if (!estimate.has_value()) {
+        return false;
+    }
+
+    pos_setpoint_ = *estimate;
+    set_input_pos_and_steps(*estimate);
+    return true;
+}
+
 
 void Controller::update_filter_gains() {
     float bandwidth = std::min(config_.input_filter_bandwidth, 0.25f * current_meas_hz);

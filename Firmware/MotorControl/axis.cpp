@@ -288,15 +288,7 @@ bool Axis::start_closed_loop_control() {
 
         // To avoid any transient on startup, we intialize the setpoint to be the current position
         if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL) {
-            std::optional<float> pos_init = (controller_.config_.circular_setpoints ?
-                                    controller_.pos_estimate_circular_src_ :
-                                    controller_.pos_estimate_linear_src_).any();
-            if (!pos_init.has_value()) {
-                return false;
-            } else {
-                controller_.pos_setpoint_ = *pos_init;
-                controller_.set_input_pos_and_steps(*pos_init);
-            }
+            controller_.set_setpoint_to_estimate();
         }
         controller_.input_pos_updated();
 
