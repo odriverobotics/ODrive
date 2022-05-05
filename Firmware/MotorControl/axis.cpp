@@ -287,9 +287,7 @@ bool Axis::start_closed_loop_control() {
         }
 
         // To avoid any transient on startup, we intialize the setpoint to be the current position
-        if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL) {
-            controller_.set_setpoint_to_estimate();
-        }
+        controller_.control_mode_updated();
         controller_.input_pos_updated();
 
         // Avoid integrator windup issues

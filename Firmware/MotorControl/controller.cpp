@@ -97,16 +97,18 @@ void Controller::set_input_pos_and_steps(float const pos) {
     }
 }
 
-bool Controller::set_setpoint_to_estimate() {
-    std::optional<float> estimate = (config_.circular_setpoints ?
-                            pos_estimate_circular_src_ :
-                            pos_estimate_linear_src_).any();
-    if (!estimate.has_value()) {
-        return false;
-    }
+bool Controller::control_mode_updated() {
+    if (config_.control_mode >= CONTROL_MODE_POSITION_CONTROL) {
+        std::optional<float> estimate = (config_.circular_setpoints ?
+                                pos_estimate_circular_src_ :
+                                pos_estimate_linear_src_).any();
+        if (!estimate.has_value()) {
+            return false;
+        }
 
-    pos_setpoint_ = *estimate;
-    set_input_pos_and_steps(*estimate);
+        pos_setpoint_ = *estimate;
+        set_input_pos_and_steps(*estimate);
+    }
     return true;
 }
 

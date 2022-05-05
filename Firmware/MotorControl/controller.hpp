@@ -69,6 +69,8 @@ public:
     constexpr void input_pos_updated() {
         input_pos_updated_ = true;
     }
+    bool control_mode_updated();
+    void set_input_pos_and_steps(float pos);
 
     bool select_encoder(size_t encoder_num);
 
@@ -79,9 +81,6 @@ public:
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
-
-    void set_input_pos_and_steps(float pos);
-    bool set_setpoint_to_estimate();
 
     void update_filter_gains();
     bool update();

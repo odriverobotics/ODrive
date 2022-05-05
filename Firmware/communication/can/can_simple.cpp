@@ -269,14 +269,10 @@ void CANSimple::set_input_torque_callback(Axis& axis, const can_Message_t& msg) 
 }
 
 void CANSimple::set_controller_modes_callback(Axis& axis, const can_Message_t& msg) {
-
     Controller::ControlMode const mode = static_cast<Controller::ControlMode>(can_getSignal<int32_t>(msg, 0, 32, true));
-    if (mode == Controller::CONTROL_MODE_POSITION_CONTROL) {
-        axis.controller_.set_setpoint_to_estimate();
-    }
-
     axis.controller_.config_.control_mode = static_cast<Controller::ControlMode>(mode);
     axis.controller_.config_.input_mode = static_cast<Controller::InputMode>(can_getSignal<int32_t>(msg, 32, 32, true));
+    axis.controller_.control_mode_updated();
 }
 
 void CANSimple::set_limits_callback(Axis& axis, const can_Message_t& msg) {

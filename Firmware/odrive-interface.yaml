@@ -1591,6 +1591,7 @@ valuetypes:
         doc: MagAlpha MA732 magnetic encoder
 
   ODrive.Controller.ControlMode:
+    c_setter: set_setpoint_to_estimate
     values:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.
@@ -1611,7 +1612,6 @@ valuetypes:
         doc: |
           Uses the inner torque loop, the velocity control loop, and the outer position control loop.
           Use `input_pos` to command desired position, `input_vel` to command velocity feed-forward, and `input_torque` for torque feed-forward.
-        c_setter: set_setpoint_to_estimate
 
   ODrive.Controller.InputMode:
     values:
