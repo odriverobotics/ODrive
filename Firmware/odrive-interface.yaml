@@ -1069,7 +1069,7 @@ interfaces:
           enable_overspeed_error: 
             type: bool
             doc: Enables the velocity controller's overspeed error
-          control_mode: ControlMode
+          control_mode: {type: ControlMode, c_setter: set_control_mode}
           input_mode: InputMode
           pos_gain:
             type: float32
@@ -1591,7 +1591,6 @@ valuetypes:
         doc: MagAlpha MA732 magnetic encoder
 
   ODrive.Controller.ControlMode:
-    c_setter: set_setpoint_to_estimate
     values:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.

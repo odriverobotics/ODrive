@@ -58,6 +58,7 @@ public:
         Controller* parent;
         void set_input_filter_bandwidth(float value) { input_filter_bandwidth = value; parent->update_filter_gains(); }
         void set_steps_per_circular_range(uint32_t value) { steps_per_circular_range = value > 0 ? value : steps_per_circular_range; }
+        void set_control_mode(ControlMode value) { control_mode = value; parent->control_mode_updated(); }
     };
 
     
