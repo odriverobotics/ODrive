@@ -1013,6 +1013,7 @@ interfaces:
         c_setter: set_input_pos
         doc: |
           Set the desired position of the axis.  Only valid in `CONTROL_MODE_POSITION_CONTROL`.startup.
+          Also updates the step count.
           In `INPUT_MODE_TUNING`, this acts as a DC offset for the position sine wave.
       input_vel:
         type: float32
@@ -1068,7 +1069,7 @@ interfaces:
           enable_overspeed_error: 
             type: bool
             doc: Enables the velocity controller's overspeed error
-          control_mode: ControlMode
+          control_mode: {type: ControlMode, c_setter: set_control_mode}
           input_mode: InputMode
           pos_gain:
             type: float32
