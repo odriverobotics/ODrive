@@ -76,3 +76,7 @@ Table of Contents
    configuring-vscode
    configuring-eclipse
 
+.. toctree::
+   :caption: CHANGELOG
+
+   changelog.rst
