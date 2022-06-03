@@ -108,38 +108,50 @@ Diagnostics
 Setting up Sensorless
 -------------------------------------------------------------------------------
 
-The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hundred RPM. 
+The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hundred RPM.
 In other words, sensorless mode does not support stopping or changing direction!
 
-Sensorless mode starts by ramping up the motor speed in open loop control and then switches to closed loop control automatically. 
-The sensorless speed ramping parameters are in :code:`axis.config.sensorless_ramp`. 
-The :code:`vel` and :code:`accel` (in [radians/s] and [radians/s^2]) parameters control the speed that the ramp tries to reach and how quickly it gets there. 
-When the ramp reaches :code:`sensorless_ramp.vel`, :code:`controller.input_vel` is automatically set to the same velocity, in [turns/s], and the state switches to closed loop control.
+Sensorless mode starts by using open-loop control to spin up the motor to a desired speed, and then switches to closed loop control automatically.
 
-If your motor comes to a stop after the ramp, try incrementally raising the :code:`vel` parameter. 
-The goal is to be above the minimum speed necessary for sensorless position and speed feedback to converge - this is not well-parameterized per motor. 
-The parameters suggested below work for the D5065 motor, with 270KV and 7 pole pairs. 
+The sensorless speed ramping parameters are in :code:`axis.config.sensorless_ramp`.
+
+The :code:`vel` and :code:`accel` (in [radians/s] and [radians/s^2]) parameters control the speed that the ramp tries to reach and how quickly it gets there. Note that these are in **electric radians per second**
+
+When the ramp reaches :code:`sensorless_ramp.vel`, :code:`controller.input_vel` is automatically set to the same velocity, (in [turns/s]), and the state switches to closed loop control.
+
+If your motor comes to a stop after the ramp, try incrementally raising the :code:`vel` parameter.
+The goal is to be above the minimum speed necessary for sensorless position and speed feedback to converge - this is not well-parameterized per motor.
+
 If your motor grinds and skips during the ramp, lower the :code:`accel` parameter until it is tolerable.
 
-Below are some suggested starting parameters that you can use for the ODrive D5065 motor. 
-Note that you **must** set the :code:`pm_flux_linkage` correctly for sensorless mode to work. 
-Motor calibration and setup must also be completed before sensorless mode will work.
+The Motor calibration and setup must completed before sensorless mode will work.
 
+Note that you **must** set the :code:`pm_flux_linkage` correctly for sensorless mode to work.
+
+The parameters suggested below work for the D5065 motor, with 270KV and 7 pole pairs:
 
 .. code:: iPython
 
-   odrv0.axis0.controller.config.vel_gain = 0.01
-   odrv0.axis0.controller.config.vel_integrator_gain = 0.05
-   odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
-   odrv0.axis0.controller.config.vel_limit = <a value greater than axis.config.sensorless_ramp.vel / (2pi * <pole_pairs>)>
-   odrv0.axis0.motor.config.current_lim = 2 * odrv0.axis0.config.sensorless_ramp.current
-   odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
-   odrv0.axis0.config.enable_sensorless_mode = True
+    odrv0.axis0.controller.config.vel_gain = 0.01
+    odrv0.axis0.controller.config.vel_integrator_gain = 0.05
+    odrv0.axis0.axis.config.sensorless_ramp.accel = 200
+    odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+    odrv0.axis0.controller.config.vel_limit = <a value greater than axis.config.sensorless_ramp.vel / (2pi * <pole_pairs>)>
+    odrv0.axis0.motor.config.current_lim = 2 * odrv0.axis0.config.sensorless_ramp.current
+    odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
+
+
+When ready, enable the sensorless mode and save the settings:
+
+.. code:: iPython
+    odrv0.save_configuration()
+    odrv0.axis0.config.enable_sensorless_mode = True
 
 
 To start the motor:
 
 .. code:: iPython
-  
-      odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
+    odrv0.axis0.config.sensorless_ramp.vel = target_erps_velocity # in electric radians per second
+    odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 
