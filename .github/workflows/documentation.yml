@@ -21,7 +21,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Install Python dependencies
-      run: pip install sphinx sphinx-tabs sphinx-design sphinx_copybutton sphinx_panels sphinx_rtd_theme
+      run: pip install sphinx sphinx-tabs sphinx-design sphinx_copybutton sphinx_panels sphinx_rtd_theme myst_parser
     
     - name: Build HTML docs
       run: |

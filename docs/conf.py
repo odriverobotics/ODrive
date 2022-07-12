@@ -41,7 +41,8 @@ extensions = ['sphinx_tabs.tabs',
     'sphinx.ext.autodoc', # Generate documentation from Python modules
     'sphinx.ext.autosummary', # Generate summary tables for Python documentation
     'sphinx.ext.intersphinx', # Hyperlinks to external projects (such as Python standard library)
-    'fibre_autodoc'# Generate summary tables for Python documentation
+    'fibre_autodoc', # Generate summary tables for Python documentation
+    'myst_parser' # render CHANGELOG markdown file
     
 ]
 

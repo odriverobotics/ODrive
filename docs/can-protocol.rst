@@ -28,8 +28,8 @@ Example Configuration
 
 .. code:: iPython
         
-    odrv0.axis0.config.can_node_id = 3
-    odrv0.axis1.config.can_node_id = 1
+    odrv0.axis0.config.can.node_id = 3
+    odrv0.axis1.config.can.node_id = 1
     odrv0.can.config.baud_rate = 500000
     odrv0.save_configuration()
     odrv0.reboot()

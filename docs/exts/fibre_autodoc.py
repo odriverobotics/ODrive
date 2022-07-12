@@ -24,8 +24,14 @@ import type_registry
 def load_file(name, state):
     state.document.settings.record_dependencies.add(name)
 
-def add_indent(lines: List[str], indent='   '):
-    return [(indent + l) for l in lines]
+def add_indent(lines: List[str], indent_depth=1):
+    return [('   ' * indent_depth + l) for l in lines]
+
+def format_docstring(obj, indent_depth=1):
+    return [
+        *(['', *add_indent(obj.brief.split('\n'), indent_depth)] if obj.brief else []),
+        *(['', *add_indent(obj.doc.split('\n'), indent_depth)] if obj.doc else []),
+    ]
 
 class Documenter():
     pass
@@ -49,8 +55,7 @@ class MethodDocumenter(Documenter):
         return [
             '',
             '.. py:method:: ' + method.name + '(' + in_str + ')' + out_str,
-            *(['', *add_indent(method.brief.split('\n'))] if method.brief else []),
-            *(['', *add_indent(method.doc.split('\n'))] if method.doc else []),
+            *(format_docstring(method, indent_depth=1)),
             '',
             *(('   :param ' + registry.get_py_val_type_name(decl_ns_path, arg.type) + ' ' + arg.name + ':' + (' ' + arg.doc if arg.doc else '')) for arg in method.input_args),
             '',
@@ -65,8 +70,7 @@ class AttributeDocumenter(Documenter):
             '',
             '.. py:attribute:: ' + attr.name,
             '   :type: ' + registry.get_py_ref_type_name(decl_ns_path, attr.type),
-            *(['', *add_indent(attr.brief.split('\n'))] if attr.brief else []),
-            *(['', *add_indent(attr.doc.split('\n'))] if attr.doc else []),
+            *(format_docstring(attr, indent_depth=1)),
             ''
         ]
 
@@ -86,6 +90,7 @@ class EnumDocumenter(Documenter):
                 '',
                 '   .. py:attribute:: ' + enumerator.name,
                 '      :value: {} (0x{:X})'.format(enumerator.value, enumerator.value),
+                *(format_docstring(enumerator, indent_depth=2)),
                 ''
             ]
 
@@ -107,6 +112,7 @@ class BitfieldDocumenter(Documenter):
                 '',
                 '   .. py:attribute:: ' + flag.name,
                 '      :value: {} (0x{:X})'.format(1 << flag.bit, 1 << flag.bit),
+                *(format_docstring(flag, indent_depth=2)),
                 ''
             ]
 

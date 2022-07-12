@@ -19,7 +19,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added `<axis>.controller.config.vel_integrator_limit`
 * Allow setting controller gains on CAN Simple
 
-# Releases
 ## [0.5.3] - 2021-09-03
 
 ### Fixed
@@ -38,7 +37,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Firmware boots on devices with unset OTP.
 * Changed CAN heartbeat message to include "trajectory done" flag
 
-# Releases
 ## [0.5.2] - 2021-05-21
 
 ### Fixed
@@ -132,7 +130,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead. A reboot is necessary for this to take effect.
 * `<odrv>.can.set_baud_rate()` was removed. The baudrate is now automatically updated when writing to `<odrv>.can.config.baud_rate`.
 
-# Releases
 ## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
@@ -210,7 +207,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Changed
 * Ascii command for reboot changed from `sb` to `sr`.
 
-# Releases
 ## [0.4.10] - 2019-04-24
 ### Fixed
 * Index search would trigger in the wrong place.
