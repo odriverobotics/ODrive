@@ -48,19 +48,25 @@ class PrivateReleaseApi():
         })
         return outputs
 
-    async def register_content(self, release_type: str, commit_hash: str, content_key: bytes, **qualifiers):
-        args = {
-            'commit_hash': commit_hash,
+    async def register_content(self, release_type: str, content_key: bytes, indicated_commit: str):
+        outputs = await self._api_client.call('PUT', PrivateReleaseApi.BASE_URL + '/' + release_type + '/content', inputs={
             'content_key': b64encode(content_key),
-            **qualifiers
-        }
-        outputs = await self._api_client.call('PUT', PrivateReleaseApi.BASE_URL + '/' + release_type + '/content', inputs=args)
+            'indicated_commit': indicated_commit,
+        })
         return outputs['created']
 
-    async def register_commit(self, release_type: str, channel: str, commit_hash: str):
-        outputs = await self._api_client.call('PUT', PrivateReleaseApi.BASE_URL + '/' + release_type + '/commit', inputs={
-            'commit_hash': commit_hash,
-            'channel': channel
+    async def register_version(self, release_type: str, version: str, content_key: bytes, **qualifiers):
+        outputs = await self._api_client.call('PUT', PrivateReleaseApi.BASE_URL + '/' + release_type + '/version', inputs={
+            'version': version,
+            'content_key': b64encode(content_key),
+            **qualifiers
+        })
+        return outputs['created']
+
+    async def append_to_channel(self, release_type: str, channel: str, version: str):
+        outputs = await self._api_client.call('PUT', PrivateReleaseApi.BASE_URL + '/' + release_type + '/channel', inputs={
+            'channel': channel,
+            'version': version,
         })
         return outputs['published']
 

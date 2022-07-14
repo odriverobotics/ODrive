@@ -2,11 +2,14 @@ name: 'Upload (Pre)release'
 description: |
   Pushes the specified local directory to our release file server and registers
   the new content on our release index server.
-  Whether the release will be public depends on the channel and its settings.
+  The version will not yet be associated with a channel.
 
 inputs:
   release_type:
-    description: 'Release type (firmware, gui, docs, internal-docs).' # TODO: Currently only firmware is supported.
+    description: 'Release type (firmware, gui, docs, internal-docs).' # TODO: Currently only firmware and docs is supported.
+    required: true
+  version:
+    description: 'The version name (commit hash or semantic version name)'
     required: true
   src_dir:
     description: 'The source directory on the local system.'
@@ -27,7 +30,7 @@ inputs:
     description: 'Firmware app name (default, bootloader) (for firmware releases only).'
     required: false
   variant:
-    description: 'Variant (for docs releases only).'
+    description: 'Variant (public or internal).'
     required: false
 
 runs:
@@ -101,10 +104,9 @@ runs:
         from private_release_api import PrivateReleaseApi
         from odrive.crypto import safe_b64decode
         
-        channel="0.5.4"
+        version="${{ inputs.version }}"
 
-        print("Channel:  ", channel)
-        print("Commit hash: ", '${{ github.sha }}')
+        print("Version: ", version)
         print("Content key: ", '${{ steps.load-content-key.outputs.content-key }}')
 
         async def main():
@@ -121,8 +123,12 @@ runs:
               qualifiers['variant'] = '${{ inputs.variant }}'
             
             content_key = safe_b64decode('${{ steps.load-content-key.outputs.content-key }}')
-            await release_api.register_content('${{ inputs.release_type }}', '${{ github.sha }}', content_key, **qualifiers)
-            await release_api.register_commit('${{ inputs.release_type }}', channel, '${{ github.sha }}')
-            await release_api.refresh_routes('${{ inputs.release_type }}')
+
+            # Content can only be registered once, afterwards the indicated_commit cannot be changed
+            if "${{ steps.load-content-key.outputs.needs-upload}}" == 'true':
+              await release_api.register_content('${{ inputs.release_type }}', content_key, '${{ github.sha }}')
+
+            # Can be called multiple times with same or different parameters. No effect if called twice with the same parameters.
+            await release_api.register_version('${{ inputs.release_type }}', version, content_key, **qualifiers)
 
         asyncio.run(main())

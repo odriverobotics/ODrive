@@ -25,9 +25,6 @@ project = 'ODrive Documentation'
 copyright = '2021, ODrive Robotics'
 author = 'ODrive Robotics'
 
-# The full version, including alpha/beta/rc tags
-release = '0.0'
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -61,6 +58,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #
 # html_theme = 'alabaster'
 html_theme = "sphinx_rtd_theme"
+html_theme_options = {
+    'analytics_id':'UA-93396600-3',
+    'style_external_links': True,
+    'display_version': True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -72,3 +74,10 @@ fibre_interface_files = ['../Firmware/odrive-interface.yaml']
 autosummary_generate = False
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+
+html_js_files = [
+    'https://docs.odriverobotics.com/docsInject.js'
+]
+
+version = "0.5.4"
+release = version

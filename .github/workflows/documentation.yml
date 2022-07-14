@@ -2,7 +2,7 @@ name: Build and publish HTML documentation website
 
 on:
   push:
-    branches: [ master ]
+    branches: [ 'docs-v**' ]
     paths: ['docs/**', '.github/**']
 
 jobs:
@@ -10,6 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
+    - name: Get release name and channel
+      id: release-info
+      shell: python
+      run: |
+        channel = "master"
+        version = "${{ github.ref }}"
+        assert version.startswith("refs/heads/docs-v0.5.")
+        version = version[len("refs/heads/docs-v"):]
+
+        print("::set-output name=channel::" + channel)
+        print("::set-output name=version::" + version)
     
     - name: Cache pip
       uses: actions/cache@v2
@@ -32,8 +44,17 @@ jobs:
       uses: ./.github/actions/upload-release
       with:
         release_type: docs
+        version: ${{ steps.release-info.outputs.version }}
         src_dir: docs/_build/html
         do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
         do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
         odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
         variant: public
+
+    - name: Add version to release channel
+      uses: ./.github/actions/add-version-to-channel
+      with:
+        release_type: docs
+        channel: ${{ steps.release-info.outputs.channel }}
+        version: ${{ steps.release-info.outputs.version }}
+        odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
