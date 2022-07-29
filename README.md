@@ -1,6 +1,7 @@
 ![ODrive Logo](https://static1.squarespace.com/static/58aff26de4fcb53b5efd2f02/t/59bf2a7959cc6872bd68be7e/1505700483663/Odrive+logo+plus+text+black.png?format=1000w)
 
-This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
+### Overview 
+This project aims to drive a brushless motor accurately and cheaply. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects. Here is a demo video [link](https://www.youtube.com/watch?v=WT4E5nb3KtY). 
 
 | Branch | Build Status |
 |--------|--------------|
