@@ -27,10 +27,28 @@ jobs:
           - {os: ubuntu-latest, board_version: v3.6-56V, debug: false}
 
     runs-on: ${{ matrix.os }}
+    outputs:
+      channel: ${{ steps.release-info.outputs.channel }}
+      version: ${{ steps.release-info.outputs.version }}
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # fetch entire history to get version information
+
+      - name: Get release name and channel
+        id: release-info
+        shell: python
+        run: |
+          if "${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/fw-v0.5.') }}" == "true":
+            channel = "master"
+            version = "${{ github.ref }}"[len("refs/tags/fw-v"):]
+
+          else:
+            channel = "none"
+            version = "${{ github.sha }}"
+
+          print("::set-output name=channel::" + channel)
+          print("::set-output name=version::" + version)
 
       - name: Install prerequisites (Debian)
         if: startsWith(matrix.os, 'ubuntu-')
@@ -114,7 +132,7 @@ jobs:
           mv tup_build.sh tup_build.bat # in reality this is a .bat script on windows
           .\tup_build.bat
 
-      - name: Upload binary
+      - name: Upload binary as artifact
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.debug == false }}
         uses: actions/upload-artifact@v2
         with:
@@ -123,6 +141,46 @@ jobs:
             Firmware/build/ODriveFirmware.elf
             Firmware/build/ODriveFirmware.bin
             Firmware/build/ODriveFirmware.hex
+
+      - name: Copy firmware to temp folder
+        run: |
+          mkdir ${{ github.workspace }}/out
+          cp ${{ github.workspace }}/Firmware/build/ODriveFirmware.elf ${{ github.workspace }}/out/firmware.elf
+
+      - name: Upload firmware to ODrive release system
+        if: ${{ steps.release-info.outputs.channel == 'master' && matrix.os == 'ubuntu-latest' && matrix.debug == false && (startsWith(matrix.board_version, 'v3.5-') || startsWith(matrix.board_version, 'v3.6-')) }}
+        uses: ./.github/actions/upload-release
+        with:
+          release_type: firmware
+          version: ${{ steps.release-info.outputs.version }}
+          src_dir: out
+          do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
+          do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
+          odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
+          product: ODrive ${{ matrix.board_version }}
+          app: default
+          variant: public
+
+  make-release:
+    needs: [compile] # require all builds to succeed before we actually make the release
+    if: needs.compile.outputs.channel == 'master'
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repository
+        uses: actions/checkout@v2
+
+      - name: Install Python dependencies
+        run: pip install aiohttp appdirs
+
+      - name: Add version to release channel
+        uses: ./.github/actions/add-version-to-channel
+        with:
+          release_type: firmware
+          channel: ${{ needs.compile.outputs.channel }}
+          version: ${{ needs.compile.outputs.version }}
+          odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
 
   code-checks:
     strategy:
