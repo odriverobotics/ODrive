@@ -1,0 +1,41 @@
+name: 'Add version to release channel'
+description: |
+  Appends the specified version to the end of the specified release channel if
+  it wasn't already part of that channel.
+
+inputs:
+  release_type:
+    description: 'Release type (firmware, gui, docs, internal-docs).'
+    required: true
+  channel:
+    description: 'The channel on which to register this version'
+    required: true
+  version:
+    description: 'The version name (commit hash or semantic version name)'
+    required: true
+  odrive_api_key:
+    description: 'Key to our release index server'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Register on release server
+      shell: python
+      run: |
+        import asyncio
+        import sys
+        import aiohttp
+
+        sys.path.insert(0, '${{ github.workspace }}/.github/actions/upload-release')
+        from odrive.api_client import ApiClient
+        from private_release_api import PrivateReleaseApi
+
+        async def main():
+          async with aiohttp.ClientSession() as session:
+            api_client = ApiClient(session, key='${{ inputs.odrive_api_key }}')
+            release_api = PrivateReleaseApi(api_client)
+            await release_api.append_to_channel('${{ inputs.release_type }}', "${{ inputs.channel }}", "${{ inputs.version }}")
+            await release_api.refresh_routes('${{ inputs.release_type }}')
+
+        asyncio.run(main())
