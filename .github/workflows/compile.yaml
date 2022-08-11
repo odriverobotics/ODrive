@@ -3,9 +3,8 @@ name: Tests
 on:
   pull_request:
     branches: [master, devel]
-    tags: ['fw-v*']
   push:
-    branches: [master, devel, 'fw-v*']
+    branches: [master, devel]
     tags: ['fw-v*']
 
 jobs:
