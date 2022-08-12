@@ -352,7 +352,7 @@ bool CANSimple::get_adc_voltage_callback(const Axis& axis, const can_Message_t& 
     can_Message_t txmsg;
 
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_SEND_ADC_VOLTAGE;
+    txmsg.id += MSG_GET_ADC_VOLTAGE;
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
