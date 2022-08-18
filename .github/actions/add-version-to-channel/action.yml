@@ -20,6 +20,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Install Prerequisites
+      shell: bash
+      run: |
+        pip install aiohttp cryptography
+        pip install odrive --pre
+
     - name: Register on release server
       shell: python
       run: |

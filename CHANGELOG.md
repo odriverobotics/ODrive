@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.5.5] - 2022-08-11
+
 * CANSimple messages which previously required the rtr bit to be set will now also respond if DLC = 0
 * Ensure endstops update before being checked for errors, to prevent [#625](https://github.com/odriverobotics/ODrive/issues/625)
 * Reset trajectory_done_ during homing to ensure a new trajectory is actually computed [#634](https://github.com/odriverobotics/ODrive/issues/634)
@@ -8,7 +11,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Sync `steps_` with input pos.
 * Trigger reset of input_pos and pos_setpoint to estimate when changing control mode into position control
 
-# Releases
 ## [0.5.4] - 2021-10-12
 
 ### Fixed
