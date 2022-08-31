@@ -74,6 +74,7 @@ All multibyte values are little endian (aka Intel format, aka least significant 
     * These messages are call & response. The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
     * These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.  
     * These messages can be sent to either address on a given ODrive board.
+	* You must send a valid GPIO pin number in the first byte to recieve coreect ADC voltage feedback. Since you're both sending and receiving data the RTR bit must be set to false.
 
 
 Cyclic Messages
