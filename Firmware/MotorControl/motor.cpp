@@ -517,13 +517,24 @@ void Motor::update(uint32_t timestamp) {
         error_ |= ERROR_UNKNOWN_TORQUE;
         return;
     }
+
+    std::optional<float> maybe_field_weakening = field_weakening_setpoint_src_.present();
+    if (!maybe_field_weakening.has_value()) {
+        error_ |= ERROR_UNKNOWN_TORQUE;
+        return;
+    }
+
     float torque = direction_ * *maybe_torque;
+    float field_weakening = *maybe_field_weakening;
 
     // Load setpoints from previous iteration.
     auto [id, iq] = Idq_setpoint_.previous()
                      .value_or(float2D{0.0f, 0.0f});
     // Load effective current limit
     float ilim = axis_->motor_.effective_current_lim_;
+
+    
+    id = field_weakening; //set field weakening current
 
     // Autoflux tracks old Iq (that may be 2-norm clamped last cycle) to make sure we are chasing a feasable current.
     if ((axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) && config_.acim_autoflux_enable) {
@@ -541,6 +552,7 @@ void Motor::update(uint32_t timestamp) {
     } else {
         iq = torque / axis_->motor_.config_.torque_constant;
     }
+
 
     // 2-norm clamping where Id takes priority
     float iq_lim_sqr = SQ(ilim) - SQ(id);

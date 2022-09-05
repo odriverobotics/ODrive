@@ -1007,6 +1007,10 @@ interfaces:
               that you are not getting false index pulses caused by noise. This can happen if you
               are using unshielded cable for the encoder signals.
       last_error_time: float32
+      input_field_weakening:
+        type: float32
+        unit: A
+        doc: input field weakening current
       input_pos:
         type: float32
         unit: turn
@@ -1029,6 +1033,10 @@ interfaces:
           In `CONTROL_MODE_TORQUE_CONTROL`, sets the desired output torque of the axis.
           In `CONTROL_MODE_VELOCITY_CONTROL` and `CONTROL_MODE_POSITION_CONTROL`, sets the feed-forward torque of the torque controller.
           In `INPUT_MODE_TUNING`, this acts as a DC offset for the torque sine wave.
+      field_weakening_setpoint:
+        type: readonly float32
+        unit: A
+        doc: input field weakening current
       pos_setpoint:
         type: readonly float32
         unit: turn

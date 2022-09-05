@@ -294,6 +294,7 @@ bool Axis::start_closed_loop_control() {
         controller_.vel_integrator_torque_ = 0.0f;
 
         motor_.torque_setpoint_src_.connect_to(&controller_.torque_output_);
+        motor_.field_weakening_setpoint_src_.connect_to(&controller_.field_weakening_output_);
         motor_.direction_ = sensorless_mode ? 1.0f : encoder_.config_.direction;
 
         motor_.current_control_.enable_current_control_src_ = motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL;

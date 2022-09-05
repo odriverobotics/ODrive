@@ -98,12 +98,14 @@ public:
     InputPort<float> vel_estimate_src_;
     InputPort<float> pos_wrap_src_; 
 
+    float field_weakening_setpoint_ = 0.0f; // [Amps]
     float pos_setpoint_ = 0.0f; // [turns]
     float vel_setpoint_ = 0.0f; // [turn/s]
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_torque_ = 0.0f;    // [Nm]
     float torque_setpoint_ = 0.0f;  // [Nm]
 
+    float input_field_weakening_ = 0.0f;  // [Amps]
     float input_pos_ = 0.0f;     // [turns]
     float input_vel_ = 0.0f;     // [turn/s]
     float input_torque_ = 0.0f;  // [Nm]
@@ -123,6 +125,7 @@ public:
 
     // Outputs
     OutputPort<float> torque_output_ = 0.0f;
+    OutputPort<float> field_weakening_output_ = 0.0f;
 
     // custom setters
     void set_input_pos(float value) { set_input_pos_and_steps(value); input_pos_updated(); }

@@ -126,6 +126,7 @@ public:
     float max_dc_calib_ = 0.0f; // [A] set in setup()
 
     InputPort<float> torque_setpoint_src_; // Usually points to the Controller object's output
+    InputPort<float> field_weakening_setpoint_src_;
     InputPort<float> phase_vel_src_; // Usually points to the Encoder object's output
 
     float direction_ = 0.0f; // if -1 then positive torque is converted to negative Iq

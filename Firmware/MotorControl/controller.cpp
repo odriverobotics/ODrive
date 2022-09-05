@@ -10,6 +10,7 @@ bool Controller::apply_config() {
 
 void Controller::reset() {
     // pos_setpoint is initialized in start_closed_loop_control
+    field_weakening_setpoint_ = 0.0f;
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
@@ -170,11 +171,13 @@ bool Controller::update() {
             // do nothing
         } break;
         case INPUT_MODE_PASSTHROUGH: {
+            field_weakening_setpoint_ = input_field_weakening_;
             pos_setpoint_ = input_pos_;
             vel_setpoint_ = input_vel_;
             torque_setpoint_ = input_torque_; 
         } break;
         case INPUT_MODE_VEL_RAMP: {
+            field_weakening_setpoint_ = input_field_weakening_;
             float max_step_size = std::abs(current_meas_period * config_.vel_ramp_rate);
             float full_step = input_vel_ - vel_setpoint_;
             float step = std::clamp(full_step, -max_step_size, max_step_size);
@@ -420,6 +423,7 @@ bool Controller::update() {
     }
 
     torque_output_ = torque;
+    field_weakening_output_ = field_weakening_setpoint_;
 
     // TODO: this is inconsistent with the other errors which are sticky.
     // However if we make ERROR_INVALID_ESTIMATE sticky then it will be
