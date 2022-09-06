@@ -135,9 +135,9 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
         case MSG_RESET_ODRIVE:
             NVIC_SystemReset();
             break;
-        case MSG_GET_VBUS_VOLTAGE:
+        case MSG_GET_BUS_VOLTAGE_CURRENT:
             if (msg.rtr || msg.len == 0)
-                get_vbus_voltage_callback(axis);
+                get_bus_voltage_current_callback(axis);
             break;
         case MSG_CLEAR_ERRORS:
             clear_errors_callback(axis, msg);
@@ -348,17 +348,18 @@ bool CANSimple::get_iq_callback(const Axis& axis) {
     return canbus_->send_message(txmsg);
 }
 
-bool CANSimple::get_vbus_voltage_callback(const Axis& axis) {
+bool CANSimple::get_bus_voltage_current_callback(const Axis& axis) {
     can_Message_t txmsg;
 
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_VBUS_VOLTAGE;
+    txmsg.id += MSG_GET_BUS_VOLTAGE_CURRENT;
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
-    uint32_t floatBytes;
-    static_assert(sizeof(vbus_voltage) == sizeof(floatBytes));
+    static_assert(sizeof(float) == sizeof(vbus_voltage));
+    static_assert(sizeof(float) == sizeof(ibus_));
     can_setSignal<float>(txmsg, vbus_voltage, 0, 32, true);
+    can_setSignal<float>(txmsg, ibus_, 32, 32, true);
 
     return canbus_->send_message(txmsg);
 }

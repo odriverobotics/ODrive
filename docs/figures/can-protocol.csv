@@ -93,7 +93,13 @@ IEEE 754 Float","32
 1","0
 0"
 0x016,Reboot ODrive,Master***,-,-,-,-,-,-
-0x017,Get Vbus Voltage,Master***,Vbus Voltage,0,IEEE 754 Float,32,1,0
+0x017,Get Bus Voltage and Current,Master***,"Bus Voltage
+Bus Current","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
 0x018,Clear Errors,Master,-,-,-,-,-,-
 0x019,Set Linear Count,Master,Position,0,Signed Int,32,1,0
 0x01A,Set Position Gain,Master,Pos Gain,0,IEEE 754 Float,32,1,0

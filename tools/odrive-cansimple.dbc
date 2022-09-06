@@ -110,8 +110,9 @@ BO_ 21 Get_Sensorless_Estimates: 8 Vector__XXX
 
 BO_ 22 Reboot: 0 Vector__XXX
 
-BO_ 23 Get_Vbus_Voltage: 8 Vector__XXX
- SG_ Vbus_Voltage : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+BO_ 23 Get_Bus_Voltage_Current: 8 Vector__XXX
+ SG_ Bus_Current : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Bus_Voltage : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
 BO_ 24 Clear_Errors: 0 Vector__XXX
 
@@ -155,7 +156,8 @@ SIG_VALTYPE_ 20 Iq_Setpoint : 1;
 SIG_VALTYPE_ 20 Iq_Measured : 1;
 SIG_VALTYPE_ 21 Sensorless_Pos_Estimate : 1;
 SIG_VALTYPE_ 21 Sensorless_Vel_Estimate : 1;
-SIG_VALTYPE_ 23 Vbus_Voltage : 1;
+SIG_VALTYPE_ 23 Bus_Voltage : 1;
+SIG_VALTYPE_ 23 Bus_Current : 1;
 SIG_VALTYPE_ 26 Pos_Gain : 1;
 SIG_VALTYPE_ 27 Vel_Gain : 1;
 SIG_VALTYPE_ 27 Vel_Integrator_Gain : 1;
