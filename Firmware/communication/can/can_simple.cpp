@@ -154,6 +154,9 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
         case MSG_GET_ADC_VOLTAGE:
             get_adc_voltage_callback(axis, msg);
             break;
+        case MSG_GET_CONTROLLER_ERROR:
+            get_controller_error_callback(axis);
+            break;
         default:
             break;
     }
@@ -199,6 +202,18 @@ bool CANSimple::get_sensorless_error_callback(const Axis& axis) {
     txmsg.len = 8;
 
     can_setSignal(txmsg, axis.sensorless_estimator_.error_, 0, 32, true);
+
+    return canbus_->send_message(txmsg);
+}
+
+bool CANSimple::get_controller_error_callback(const Axis& axis) {
+    can_Message_t txmsg;
+    txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_GET_CONTROLLER_ERROR;  // heartbeat ID
+    txmsg.isExt = axis.config_.can.is_extended;
+    txmsg.len = 8;
+
+    can_setSignal(txmsg, axis.controller_.error_, 0, 32, true);
 
     return canbus_->send_message(txmsg);
 }

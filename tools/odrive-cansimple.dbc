@@ -125,12 +125,18 @@ BO_ 27 Set_Vel_gains: 8 Vector__XXX
  SG_ Vel_Integrator_Gain : 32|32@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Vel_Gain : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
+BO_ 28 Get_ADC_Voltage: 8 Vector__XXX
+ SG_ ADC_Voltage : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 29 Get_Controller_Error: 8 Vector__XXX
+ SG_ Controller_Error : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
 
 
 
 
-
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 65535;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
 
 
 SIG_VALTYPE_ 9 Pos_Estimate : 1;
@@ -153,5 +159,6 @@ SIG_VALTYPE_ 23 Vbus_Voltage : 1;
 SIG_VALTYPE_ 26 Pos_Gain : 1;
 SIG_VALTYPE_ 27 Vel_Gain : 1;
 SIG_VALTYPE_ 27 Vel_Integrator_Gain : 1;
+SIG_VALTYPE_ 28 ADC_Voltage : 1;
 
 

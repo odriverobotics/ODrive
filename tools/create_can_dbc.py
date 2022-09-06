@@ -161,6 +161,12 @@ setVelGainsMsg = cantools.database.can.Message(0x01B, "Set_Vel_gains", 8, [velGa
 adcVoltage = cantools.database.can.Signal("ADC_Voltage", 0, 32, is_float=True)
 getADCVoltageMsg = cantools.database.can.Message(0x01C, "Get_ADC_Voltage", 8, [adcVoltage])
 
+# 0x01D - Controller Error
+controllerError = cantools.database.can.Signal("Controller_Error", 0, 32)
+controllerErrorMsg = cantools.database.can.Message(
+    0x01D, "Get_Controller_Error", 8, [controllerError]
+)
+
 db = cantools.database.can.Database(
     [
         heartbeatMsg,
@@ -189,7 +195,8 @@ db = cantools.database.can.Database(
         setLinearCountMsg,
         setPosGainMsg,
         setVelGainsMsg,
-        getADCVoltageMsg
+        getADCVoltageMsg,
+        controllerErrorMsg,
     ]
 )
 

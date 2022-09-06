@@ -36,6 +36,7 @@ class CANSimple {
         MSG_SET_POS_GAIN,
         MSG_SET_VEL_GAINS,
         MSG_GET_ADC_VOLTAGE,
+        MSG_GET_CONTROLLER_ERROR,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
