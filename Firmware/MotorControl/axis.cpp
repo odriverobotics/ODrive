@@ -424,9 +424,11 @@ bool Axis::run_homing() {
         return false;
     }
 
-    // Set the current position to 0.
-    encoder_.set_linear_count(0);
-    controller_.input_pos_ = 0;
+    // Set the current position to 0, the target to zero, and make sure we're path planning from 0 to 0
+    encoder_.set_linear_count(0); 
+    controller_.input_pos_ = 0.0f;
+    controller_.pos_setpoint_ = 0.0f;
+    controller_.vel_setpoint_ = 0.0f;
     controller_.input_pos_updated();
 
     controller_.config_.control_mode = stored_control_mode;

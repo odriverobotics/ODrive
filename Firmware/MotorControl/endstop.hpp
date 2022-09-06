@@ -18,7 +18,6 @@ class Endstop {
         void set_debounce_ms(uint32_t value) { debounce_ms = value; parent->apply_config(); }
     };
 
-    Endstop() {}
 
     Endstop::Config_t config_;
     Axis* axis_ = nullptr;
