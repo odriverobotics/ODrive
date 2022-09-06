@@ -431,6 +431,9 @@ bool Axis::run_homing() {
     controller_.vel_setpoint_ = 0.0f;
     controller_.input_pos_updated();
 
+    // Force encoder estimate to update
+    osDelay(1);
+
     controller_.config_.control_mode = stored_control_mode;
     controller_.config_.input_mode = stored_input_mode;
     homing_.is_homed = true;
