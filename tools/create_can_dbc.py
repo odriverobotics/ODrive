@@ -157,6 +157,10 @@ velGain = cantools.database.can.Signal("Vel_Gain", 0, 32, is_float=True)
 velIntGain = cantools.database.can.Signal("Vel_Integrator_Gain", 32, 32, is_float=True)
 setVelGainsMsg = cantools.database.can.Message(0x01B, "Set_Vel_gains", 8, [velGain, velIntGain])
 
+# 0x01C - Get ADC Voltage
+adcVoltage = cantools.database.can.Signal("ADC_Voltage", 0, 32, is_float=True)
+getADCVoltageMsg = cantools.database.can.Message(0x01C, "Get_ADC_Voltage", 8, [adcVoltage])
+
 db = cantools.database.can.Database(
     [
         heartbeatMsg,
@@ -184,7 +188,8 @@ db = cantools.database.can.Database(
         clearErrorsMsg,
         setLinearCountMsg,
         setPosGainMsg,
-        setVelGainsMsg
+        setVelGainsMsg,
+        getADCVoltageMsg
     ]
 )
 

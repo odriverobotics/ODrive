@@ -10,3 +10,5 @@ To read the voltage on GPIO1 in odrivetool the following would be entered: :code
 Similar to RC PWM input, analog inputs can also be used to feed any of the numerical properties that are visible in :code:`odrivetool`. 
 This is done by configuring :code:`odrv0.config.gpio3_analog_mapping` and :code:`odrv0.config.gpio4_analog_mapping`. 
 Refer to :ref:`RC PWM <rc-pwm-doc>` for instructions on how to configure the mappings.
+
+You may also retrieve voltage measurements from analog inputs via the CAN protocol by sending the Get ADC Voltage message with the GPIO number of the analog input you wish to read. Refer to :ref: `CAN Protocol <can-protocol-doc>` for guidance on how to use the CAN Protocol.
