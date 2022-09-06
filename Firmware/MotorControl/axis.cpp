@@ -354,9 +354,6 @@ bool Axis::run_closed_loop_control_loop() {
 // Slowly drive in the negative direction at homing_speed until the min endstop is pressed
 // When pressed, set the linear count to the offset (default 0), and then go to position 0
 bool Axis::run_homing() {
-    Controller::ControlMode stored_control_mode = controller_.config_.control_mode;
-    Controller::InputMode stored_input_mode = controller_.config_.input_mode;
-
     // TODO: theoretically this check should be inside the update loop,
     // otherwise someone could disable the endstop while homing is in progress.
     if (!min_endstop_.config_.enabled) {
@@ -434,8 +431,6 @@ bool Axis::run_homing() {
     // Force encoder estimate to update
     osDelay(1);
 
-    controller_.config_.control_mode = stored_control_mode;
-    controller_.config_.input_mode = stored_input_mode;
     homing_.is_homed = true;
 
     return check_for_errors();
@@ -545,9 +540,13 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_HOMING: {
-                //if (odrv.any_error())
-                //    goto invalid_state_label;
+                Controller::ControlMode stored_control_mode = controller_.config_.control_mode;
+                Controller::InputMode stored_input_mode = controller_.config_.input_mode;
+                
                 status = run_homing();
+
+                controller_.config_.control_mode = stored_control_mode;
+                controller_.config_.input_mode = stored_input_mode;
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
