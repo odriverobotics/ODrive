@@ -1,6 +1,10 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Fixed
+
+* Fixed race condition in homing sequence that was causing strange behaviour
+
 # Releases
 ## [0.5.5] - 2022-08-11
 
