@@ -1,11 +1,14 @@
-# Unreleased Features
-Please add a note of your changes below this heading if you make a Pull Request.
+
+## [0.5.6] - Unreleased
 
 ### Fixed
 
 * Fixed race condition in homing sequence that was causing strange behaviour
 
-# Releases
+### Changed
+
+* Improved can_generate_dbc.py file and resultant .dbc.  Now supports 8 ODrive axes (0..7) natively
+
 ## [0.5.5] - 2022-08-11
 
 * CANSimple messages which previously required the rtr bit to be set will now also respond if DLC = 0
