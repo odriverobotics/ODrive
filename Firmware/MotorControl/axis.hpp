@@ -190,15 +190,18 @@ public:
 
     void set_servo1_input(float value) { servo1_input_ = value; servo1_input_updated(); };
     void set_servo2_input(float value) { servo2_input_ = value; servo2_input_updated(); };
-    void set_eject_button_pressed(bool pressed) { eject_button_pressed_ = pressed; };
-    void set_load_button_pressed(bool pressed) { load_button_pressed_ = pressed; };
+    void set_button_1_pressed(bool pressed) { button_1_pressed_ = pressed; };
+    void set_button_2_pressed(bool pressed) { button_2_pressed_ = pressed; };
+    void set_button_3_pressed(bool pressed) { button_3_pressed_ = pressed; };
 
     bool servo1_input_updated_ = true;
     bool servo2_input_updated_ = true;
     float servo1_input_ = 1300.0f;     // [us]
     float servo2_input_ = 1300.0f;     // [us]
-    bool eject_button_pressed_ = false;
-    bool load_button_pressed_ = false;
+
+    bool button_1_pressed_ = false;
+    bool button_2_pressed_ = false;
+    bool button_3_pressed_ = false;
 
     void run_watts_servo_updates();
     bool run_lockin_spin(const LockinConfig_t &lockin_config);

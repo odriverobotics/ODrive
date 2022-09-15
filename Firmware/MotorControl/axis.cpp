@@ -487,18 +487,27 @@ void Axis::run_watts_servo_updates()
         servo2_input_updated_ = false;
     }
 
-    // Also check if buttons (GPIO7 and GPIO8) are pressed and update the states
-    {
-        uint16_t gpio_pin = get_gpio_pin_by_pin(7);
-        GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(7);
-        int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-        set_eject_button_pressed(pin_state == 0);
-    }
+    // Check buttons
+    // Button1 : GPIO8
+    // Button2 : GPIO6
+    // Button3 : GPIO7
     {
         uint16_t gpio_pin = get_gpio_pin_by_pin(8);
         GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(8);
         int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-        set_load_button_pressed(pin_state == 0);
+        set_button_1_pressed(pin_state == 0);
+    }
+    {
+        uint16_t gpio_pin = get_gpio_pin_by_pin(6);
+        GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(6);
+        int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        set_button_2_pressed(pin_state == 0);
+    }
+    {
+        uint16_t gpio_pin = get_gpio_pin_by_pin(7);
+        GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(7);
+        int pin_state = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        set_button_3_pressed(pin_state == 0);
     }
 }
 
