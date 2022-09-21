@@ -14,10 +14,11 @@ class MechanicalBrake : public ODriveIntf::MechanicalBrakeIntf  {
         void set_gpio_num(uint16_t value) { gpio_num = value; }
     };
 
-    MechanicalBrake() {}
 
     MechanicalBrake::Config_t config_;
     Axis* axis_ = nullptr;
+
+    bool is_engaged_ = false;
 
     void release();
     void engage();
