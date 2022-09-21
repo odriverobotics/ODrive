@@ -423,6 +423,10 @@ bool Axis::run_homing() {
 
     // Set the current position to 0, the target to zero, and make sure we're path planning from 0 to 0
     encoder_.set_linear_count(0); 
+    const auto load_encoder_axis = controller_.config_.load_encoder_axis;
+    if(load_encoder_axis != axis_num_ && load_encoder_axis < AXIS_COUNT) {
+        axes[load_encoder_axis].encoder_.set_linear_count(0);
+    }
     controller_.input_pos_ = 0.0f;
     controller_.pos_setpoint_ = 0.0f;
     controller_.vel_setpoint_ = 0.0f;
