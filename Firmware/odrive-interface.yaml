@@ -1188,6 +1188,7 @@ interfaces:
             usually corresponds roughly to the current position of the axis.'
           }
       start_anticogging_calibration:
+      get_anticogging_value: {in: {index: uint32}, out: {val: float32}}
 
 
   ODrive.Encoder:
