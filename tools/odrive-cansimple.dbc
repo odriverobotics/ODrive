@@ -37,9 +37,10 @@ BU_: Master ODrive_Axis0 ODrive_Axis1 ODrive_Axis2 ODrive_Axis3 ODrive_Axis4 ODr
 
 
 BO_ 1 Axis0_Heartbeat: 8 ODrive_Axis0
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -131,9 +132,10 @@ BO_ 29 Axis0_Get_Controller_Error: 8 ODrive_Axis0
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 33 Axis1_Heartbeat: 8 ODrive_Axis1
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -225,9 +227,10 @@ BO_ 61 Axis1_Get_Controller_Error: 8 ODrive_Axis1
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 65 Axis2_Heartbeat: 8 ODrive_Axis2
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -319,9 +322,10 @@ BO_ 93 Axis2_Get_Controller_Error: 8 ODrive_Axis2
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 97 Axis3_Heartbeat: 8 ODrive_Axis3
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -413,9 +417,10 @@ BO_ 125 Axis3_Get_Controller_Error: 8 ODrive_Axis3
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 129 Axis4_Heartbeat: 8 ODrive_Axis4
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -507,9 +512,10 @@ BO_ 157 Axis4_Get_Controller_Error: 8 ODrive_Axis4
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 161 Axis5_Heartbeat: 8 ODrive_Axis5
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -601,9 +607,10 @@ BO_ 189 Axis5_Get_Controller_Error: 8 ODrive_Axis5
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 193 Axis6_Heartbeat: 8 ODrive_Axis6
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
@@ -695,9 +702,10 @@ BO_ 221 Axis6_Get_Controller_Error: 8 ODrive_Axis6
  SG_ Controller_Error : 0|32@1+ (1,0) [0|0] ""  Master
 
 BO_ 225 Axis7_Heartbeat: 8 ODrive_Axis7
- SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] ""  Master
- SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] ""  Master
- SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] ""  Master
+ SG_ Trajectory_Done_Flag : 63|1@1+ (1,0) [0|0] ""  Master
+ SG_ controller_Error_Flag : 56|1@1+ (1,0) [0|0] ""  Master
+ SG_ encoder_Error_Flag : 48|1@1+ (1,0) [0|0] ""  Master
+ SG_ Motor_Error_Flag : 40|1@1+ (1,0) [0|0] ""  Master
  SG_ Axis_State : 32|8@1+ (1,0) [0|0] ""  Master
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] ""  Master
 

@@ -13,12 +13,21 @@ for axisID in range(0, 8):
     # 0x001 - Heartbeat
     axisError = can.Signal("Axis_Error", 0, 32, receivers=['Master'])
     axisState = can.Signal("Axis_State", 32, 8, receivers=['Master'])
-    motorFlags = can.Signal("Motor_Flags", 40, 8, receivers=['Master'])
-    encoderFlags = can.Signal("Encoder_Flags", 48, 8, receivers=['Master'])
-    controllerFlags = can.Signal("Controller_Flags", 56, 8, receivers=['Master'])
+    motorErrorFlag = can.Signal("Motor_Error_Flag", 40, 1, receivers=['Master'])
+    encoderErrorFlag = can.Signal("encoder_Error_Flag", 48, 1, receivers=['Master'])
+    controllerErrorFlag = can.Signal("controller_Error_Flag", 56, 1, receivers=['Master'])
+    trajectoryDoneFlag = can.Signal("Trajectory_Done_Flag", 63, 1, receivers=['Master'])
 
     heartbeatMsg = can.Message(
-        0x001, "Heartbeat", 8, [axisError, axisState, motorFlags, encoderFlags, controllerFlags], send_type='cyclic', cycle_time=100, senders=[newNode.name]
+        0x001, "Heartbeat", 8, 
+        [
+            axisError, 
+            axisState, 
+            motorErrorFlag, 
+            encoderErrorFlag, 
+            controllerErrorFlag,
+            trajectoryDoneFlag
+        ], send_type='cyclic', cycle_time=100, senders=[newNode.name]
     )
 
     # 0x002 - E-Stop Message

@@ -449,7 +449,6 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     can_setSignal(txmsg, motorFlags, 40, 8, true);
     can_setSignal(txmsg, encoderFlags, 48, 8, true);
     can_setSignal(txmsg, controllerFlags, 56, 8, true);
-    // can_setSignal(txmsg, axis.current_state_, 32, 32, true);
 
     return canbus_->send_message(txmsg);
 }

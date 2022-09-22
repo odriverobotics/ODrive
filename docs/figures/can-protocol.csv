@@ -2,15 +2,33 @@ CMD ID,Name,Sender,Signals,Start byte,Signal Type,Bits,Factor,Offset
 0x000,CANOpen NMT Message**,Master,-,-,-,-,-,-
 0x001,ODrive Heartbeat Message,Axis,"Axis Error
 Axis Current State
-Controller Status","0
+Motor Error Flag
+Encoder Error Flag
+Controller Error Flag
+Trajectory Done Flag","0
 4
-7","Unsigned Int
+5.0
+6.0
+7.0
+7.7","Unsigned Int
 Unsigned Int
-Bitfield","32
+Unsigned Int
+Unsigned Int
+Unsigned Int
+Unsigned Int","32
 8
-8","-
+1
+1
+1
+1","-
+-
+-
+-
 -
 -","-
+-
+-
+-
 -
 -"
 0x002,ODrive Estop Message,Master,-,-,-,-,-,-
