@@ -435,11 +435,7 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     can_setSignal(txmsg, uint8_t(axis.current_state_), 32, 8, true);
 
     // Motor flags
-    uint8_t motorFlags = 0;  // no error
-
-    if(axis.motor_.error_ != 0) {
-        motorFlags = 1;  // theres an error
-    }
+    uint8_t motorFlags = axis.motor_.error_ != 0;
 
     // Encoder flags
     uint8_t encoderFlags = axis.encoder_.error_ != 0;
