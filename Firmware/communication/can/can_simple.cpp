@@ -442,11 +442,7 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     }
 
     // Encoder flags
-    uint8_t encoderFlags = 0;  // no error
-
-    if(axis.encoder_.error_ != 0) {
-        encoderFlags = 1;  // theres an error
-    }
+    uint8_t encoderFlags = axis.encoder_.error_ != 0;
 
     // Controller flags
     uint8_t controllerFlags =axis.controller_.error_ != 0;
