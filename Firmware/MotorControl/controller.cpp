@@ -267,6 +267,13 @@ bool Controller::update() {
         
     }
 
+    // Never command a setpoint beyond its limit
+    if(config_.enable_vel_limit) {
+        vel_setpoint_ = std::clamp(vel_setpoint_, -config_.vel_limit, config_.vel_limit);
+    }
+    const float Tlim = axis_->motor_.max_available_torque();
+    torque_setpoint_ = std::clamp(torque_setpoint_, -Tlim, Tlim);
+
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float gain_scheduling_multiplier = 1.0f;
@@ -373,7 +380,6 @@ bool Controller::update() {
 
     // Torque limiting
     bool limited = false;
-    float Tlim = axis_->motor_.max_available_torque();
     if (torque > Tlim) {
         limited = true;
         torque = Tlim;
