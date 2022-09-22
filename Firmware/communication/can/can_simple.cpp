@@ -449,12 +449,7 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     }
 
     // Controller flags
-    uint8_t controllerFlags = 0;  // no error
-
-    if(axis.controller_.error_ != 0) {
-        controllerFlags = 1;  // theres an error
-    }
-
+    uint8_t controllerFlags =axis.controller_.error_ != 0;
     uint8_t trajDone = uint8_t(axis.controller_.trajectory_done_) << 7;
     controllerFlags |= trajDone;
 
