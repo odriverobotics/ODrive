@@ -4,6 +4,16 @@
 ### Fixed
 
 * Fixed race condition in homing sequence that was causing strange behaviour
+* When using a load encoder, CAN will report the correct position and velocity
+* When using a load encoder, homing will reset the correct linear position
+* Implemented CAN controller message, which was previously defined but not actually implemented
+* Get Vbus Voltage message updated to match ODrive Pro's CANSimple implementation
+
+### Added
+
+* Added public `controller.get_anticogging_value(uint32)` fibre function to index into the the cogging map
+* Added Get ADC Voltage message to CAN (0x1C).  Send the desired GPIO number in byte 1, and the ODrive will respond with the ADC voltage from that pin (if previously configured for analog)
+* Added CAN heartbeat message flags for motor, controller, and encoder error.  If flag is true, fetch the corresponding error with the respective message.
 
 ### Changed
 
