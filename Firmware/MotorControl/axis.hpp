@@ -197,7 +197,7 @@ public:
     bool servo1_input_updated_ = true;
     bool servo2_input_updated_ = true;
     float servo1_input_ = 1600.0f;     // [us]
-    float servo2_input_ = 1600.0f;     // [us]
+    float servo2_input_ = 1700.0f;     // [us]
 
     bool button_1_pressed_ = false;
     bool button_2_pressed_ = false;
