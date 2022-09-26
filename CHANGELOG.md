@@ -8,17 +8,19 @@
 * When using a load encoder, homing will reset the correct linear position.  Fixes [#651](https://github.com/odriverobotics/ODrive/issues/651)
 * Implemented CAN controller error message, which was previously defined but not actually implemented.
 * Get Vbus Voltage message updated to match ODrive Pro's CANSimple implementation.
-* vel_setpoint and torque_setpoint will be clamped to vel_limit and the active torque limit.  Fixes [#647](https://github.com/odriverobotics/ODrive/issues/647)
-
+* `vel_setpoint` and `torque_setpoint` will be clamped to `vel_limit` and the active torque limit.  Fixes [#647](https://github.com/odriverobotics/ODrive/issues/647)
 ### Added
 
 * Added public `controller.get_anticogging_value(uint32)` fibre function to index into the the cogging map.  Fixes [#690](https://github.com/odriverobotics/ODrive/issues/690)
 * Added Get ADC Voltage message to CAN (0x1C).  Send the desired GPIO number in byte 1, and the ODrive will respond with the ADC voltage from that pin (if previously configured for analog)
 * Added CAN heartbeat message flags for motor, controller, and encoder error.  If flag is true, fetch the corresponding error with the respective message.
+* Added scoped enums, e.g. `CONTROL_MODE_POSITION_CONTROL` can be used as `ControlMode.POSITION_CONTROL`
 
 ### Changed
 
 * Improved can_generate_dbc.py file and resultant .dbc.  Now supports 8 ODrive axes (0..7) natively
+* Add units and value tables to every signal in odrive-cansimple.dbc
+* Autogenerate odrive-cansimple.dbc on compile
 
 ## [0.5.5] - 2022-08-11
 
