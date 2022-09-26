@@ -763,9 +763,6 @@ bool Encoder::update() {
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
-    if(mode_ & MODE_FLAG_ABS)
-        count_in_cpr_ = pos_abs_latched;
-
     // Memory for pos_circular
     float pos_cpr_counts_last = pos_cpr_counts_;
 
