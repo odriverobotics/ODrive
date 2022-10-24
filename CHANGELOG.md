@@ -9,12 +9,27 @@
 * Implemented CAN controller error message, which was previously defined but not actually implemented.
 * Get Vbus Voltage message updated to match ODrive Pro's CANSimple implementation.
 * `vel_setpoint` and `torque_setpoint` will be clamped to `vel_limit` and the active torque limit.  Fixes [#647](https://github.com/odriverobotics/ODrive/issues/647)
+
 ### Added
 
 * Added public `controller.get_anticogging_value(uint32)` fibre function to index into the the cogging map.  Fixes [#690](https://github.com/odriverobotics/ODrive/issues/690)
 * Added Get ADC Voltage message to CAN (0x1C).  Send the desired GPIO number in byte 1, and the ODrive will respond with the ADC voltage from that pin (if previously configured for analog)
 * Added CAN heartbeat message flags for motor, controller, and encoder error.  If flag is true, fetch the corresponding error with the respective message.
 * Added scoped enums, e.g. `CONTROL_MODE_POSITION_CONTROL` can be used as `ControlMode.POSITION_CONTROL`
+* Added more cyclic messages to can.  Use the `rate_ms` values in `<odrv>.<axis>.config.can` to set the cycle rate of the message in milliseconds.  Set a rate to 0 to disable sending.  The following variables are avaialble:
+
+Command ID | Rate Variable | Message Name
+:-- | :-- | :--
+ 0x01 | `heartbeat_rate_ms` | Heartbeat
+ 0x09 | `encoder_rate_ms` | Get Encoder Estimates
+ 0x03 | `motor_error_rate_ms` | Get Motor Error
+ 0x04 | `encoder_error_rate_ms` | Get Encoder Error
+ 0x1D | `controller_error_rate_ms` | Get Controller Error
+ 0x05 | `sensorless_error_rate_ms` | Get Sensorless Error
+ 0x0A | `encoder_count_rate_ms` | Get Encoder Count
+ 0x14 | `iq_rate_ms` | Get Iq
+ 0x15 | `sensorless_rate_ms` | Get Sensorless Estimates
+ 0x17 | `bus_vi_rate_ms` | Get Bus Voltage Current
 
 ### Changed
 
