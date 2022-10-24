@@ -56,6 +56,14 @@ public:
         bool is_extended = false;
         uint32_t heartbeat_rate_ms = 100;
         uint32_t encoder_rate_ms = 10;
+        uint32_t motor_error_rate_ms = 0;
+        uint32_t encoder_error_rate_ms = 0;
+        uint32_t controller_error_rate_ms = 0;
+        uint32_t sensorless_error_rate_ms = 0;
+        uint32_t encoder_count_rate_ms = 0;
+        uint32_t iq_rate_ms = 0;
+        uint32_t sensorless_rate_ms = 0;
+        uint32_t bus_vi_rate_ms = 0;
     };
 
     struct Config_t {
@@ -101,6 +109,14 @@ public:
     struct CAN_t {
         uint32_t last_heartbeat = 0;
         uint32_t last_encoder = 0;
+        uint32_t last_motor_error = 0;
+        uint32_t last_encoder_error = 0;
+        uint32_t last_controller_error = 0;
+        uint32_t last_sensorless_error = 0;
+        uint32_t last_encoder_count = 0;
+        uint32_t last_iq = 0;
+        uint32_t last_sensorless = 0;
+        uint32_t last_bus_vi = 0;
     };
 
     Axis(int axis_num,

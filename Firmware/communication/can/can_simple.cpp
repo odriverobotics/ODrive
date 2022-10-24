@@ -2,6 +2,7 @@
 #include "can_simple.hpp"
 
 #include <odrive_main.h>
+#include <functional>
 
 bool CANSimple::init() {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -398,26 +399,38 @@ uint32_t CANSimple::service_stack() {
         }
     }
 
-    for (auto& a : axes) {
-        MEASURE_TIME(a.task_times_.can_heartbeat) {
-            if (a.config_.can.heartbeat_rate_ms > 0) {
-                if ((now - a.can_.last_heartbeat) >= a.config_.can.heartbeat_rate_ms) {
-                    if (send_heartbeat(a))
-                        a.can_.last_heartbeat = now;
+    struct periodic {
+        const uint32_t& rate;
+        uint32_t& last_time;
+        bool (CANSimple::* callback)(const Axis& axis);
+    };
+
+    for (auto& axis : axes) {
+        std::array<periodic, 10> periodics = {{
+            {axis.config_.can.heartbeat_rate_ms, axis.can_.last_heartbeat, &CANSimple::send_heartbeat},
+            {axis.config_.can.encoder_rate_ms, axis.can_.last_encoder, &CANSimple::get_encoder_estimates_callback},
+            {axis.config_.can.motor_error_rate_ms, axis.can_.last_motor_error, &CANSimple::get_motor_error_callback},
+            {axis.config_.can.encoder_error_rate_ms, axis.can_.last_encoder_error, &CANSimple::get_encoder_error_callback},
+            {axis.config_.can.controller_error_rate_ms, axis.can_.last_controller_error, &CANSimple::get_controller_error_callback},
+            {axis.config_.can.sensorless_error_rate_ms, axis.can_.last_sensorless_error, &CANSimple::get_sensorless_error_callback},
+            {axis.config_.can.encoder_count_rate_ms, axis.can_.last_encoder_count, &CANSimple::get_encoder_count_callback},
+            {axis.config_.can.iq_rate_ms, axis.can_.last_iq, &CANSimple::get_iq_callback},
+            {axis.config_.can.sensorless_rate_ms, axis.can_.last_sensorless, &CANSimple::get_sensorless_estimates_callback},
+            {axis.config_.can.bus_vi_rate_ms, axis.can_.last_bus_vi, &CANSimple::get_bus_voltage_current_callback},
+        }};
+
+        MEASURE_TIME(axis.task_times_.can_heartbeat) {
+            for (auto& msg : periodics) {
+                if (msg.rate > 0) {
+                    if ((now - msg.last_time) >= msg.rate) {
+                        if (std::invoke(msg.callback, this, axis)) {
+                            msg.last_time = now;
+                        }
+                    }
+
+                    int nextAxisService = msg.last_time + msg.rate - now;
+                    nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
                 }
-
-                int nextAxisService = a.can_.last_heartbeat + a.config_.can.heartbeat_rate_ms - now;
-                nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
-            }
-
-            if (a.config_.can.encoder_rate_ms > 0) {
-                if ((now - a.can_.last_encoder) >= a.config_.can.encoder_rate_ms) {
-                    if (get_encoder_estimates_callback(a))
-                        a.can_.last_encoder = now;
-                }
-
-                int nextAxisService = a.can_.last_encoder + a.config_.can.encoder_rate_ms - now;
-                nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
             }
         }
     }
