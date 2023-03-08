@@ -1196,6 +1196,7 @@ interfaces:
             usually corresponds roughly to the current position of the axis.'
           }
       start_anticogging_calibration:
+      remove_anticogging_bias: {out: {val: float32}}
       get_anticogging_value: {in: {index: uint32}, out: {val: float32}}
 
 

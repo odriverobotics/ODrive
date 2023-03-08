@@ -81,6 +81,7 @@ public:
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
+    float remove_anticogging_bias();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
     
     float get_anticogging_value(uint32_t index) {

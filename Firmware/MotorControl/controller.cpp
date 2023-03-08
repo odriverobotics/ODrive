@@ -1,6 +1,7 @@
 
 #include "odrive_main.h"
 #include <algorithm>
+#include <numeric>
 
 bool Controller::apply_config() {
     config_.parent = this;
@@ -51,6 +52,20 @@ void Controller::start_anticogging_calibration() {
     if (axis_->error_ == Axis::ERROR_NONE) {
         config_.anticogging.calib_anticogging = true;
     }
+}
+
+float Controller::remove_anticogging_bias()
+{
+    auto& cogmap = config_.anticogging.cogging_map;
+    
+    auto sum = std::accumulate(std::begin(cogmap), std::end(cogmap), 0.0f);
+    auto average = sum / std::size(cogmap);
+
+    for(auto& val : cogmap) {
+        val -= average;
+    }
+
+    return average;
 }
 
 
