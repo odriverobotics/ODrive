@@ -85,6 +85,9 @@ public:
 
         float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;
+        bool enable_brake_state_fallthrough_on_watchdog_timeout = false; //<! Enables fallthrough to AXIS_STATE_BRAKE instead of
+                                                                         //<! setting the watchdog error with fallthrough to
+                                                                         //<! AXIS_STATE_IDLE in case of a watchdog timeout.
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
@@ -157,6 +160,7 @@ public:
     bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
                 std::function<bool(bool)> loop_cb = {} );
     bool run_closed_loop_control_loop();
+    bool run_brake_loop();
     bool run_homing();
     bool run_idle_loop();
 

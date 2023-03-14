@@ -169,16 +169,30 @@ void Axis::watchdog_feed() {
 
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
-    if (!config_.enable_watchdog) return true;
-
+    if (!config_.enable_watchdog) {
+        return true;
+    }
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
     if (watchdog_current_value_ > 0) {
         watchdog_current_value_--;
         return true;
-    } else {
-        error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
-        return false;
     }
+    // Go to braking state from closed loop control when watchdog times out.
+    if (current_state_ == AXIS_STATE_CLOSED_LOOP_CONTROL &&
+        config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
+        //controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
+        //controller_.config_.input_mode = Controller::INPUT_MODE_PASSTHROUGH;
+        //controller_.input_vel_ = 0;
+        requested_state_ = AXIS_STATE_BRAKE;
+        return true;
+    }
+    // Don't care about timeouts in AXIS_STATE_BRAKE if brake state fallthrough is enabled.
+    if (current_state_ == AXIS_STATE_BRAKE &&
+        config_.enable_brake_state_fallthrough_on_watchdog_timeout) {
+        return true;
+    }
+    error_ |= ERROR_WATCHDOG_TIMER_EXPIRED;
+    return false;
 }
 
 bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
@@ -341,6 +355,22 @@ bool Axis::run_closed_loop_control_loop() {
     set_step_dir_active(config_.enable_step_dir);
 
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
+        osDelay(1);
+    }
+
+    set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
+    stop_closed_loop_control();
+
+    return check_for_errors();
+}
+
+bool Axis::run_brake_loop() {
+    start_closed_loop_control();
+    set_step_dir_active(config_.enable_step_dir);
+
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
+        controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
+        controller_.input_vel_ = 0.0f;
         osDelay(1);
     }
 
@@ -576,6 +606,15 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
                 watchdog_feed();
                 status = run_closed_loop_control_loop();
+            } break;
+
+            case AXIS_STATE_BRAKE: {
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
+                if (!motor_.is_calibrated_ || (encoder_.config_.direction==0 && !config_.enable_sensorless_mode))
+                    goto invalid_state_label;
+                watchdog_feed();
+                status = run_brake_loop();
             } break;
 
             case AXIS_STATE_IDLE: {
