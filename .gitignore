@@ -32,7 +32,7 @@ target/
 
 # Tup
 .tup
-tup.config
+# tup.config
 
 # Sphinx documentation
 /docs/_build/
