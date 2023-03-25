@@ -191,6 +191,7 @@ int main(void)
   MX_UART4_Init();
   MX_TIM5_Init();
   MX_TIM13_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
   //Required to use OC4 for ADC triggering.

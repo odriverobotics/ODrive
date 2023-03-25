@@ -51,6 +51,7 @@ public:
     bool do_checks();
 
     void enc_index_cb();
+    void enc_index_cb_original();
     void set_idx_subscribe(bool override_enable = false);
     void update_pll_gains();
     void check_pre_calibrated();
