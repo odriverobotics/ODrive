@@ -1599,6 +1599,9 @@ valuetypes:
       SPI_ABS_MA732:
         value: 0x104
         doc: MagAlpha MA732 magnetic encoder
+      SPI_ABS_EMS22A:
+        value: 0x105
+        doc: Bourns EMS22A Non-Contacting Absolute Encoder
 
   ODrive.Controller.ControlMode:
     values:

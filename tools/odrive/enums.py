@@ -56,6 +56,7 @@ ENCODER_MODE_SPI_ABS_AMS                 = 257
 ENCODER_MODE_SPI_ABS_AEAT                = 258
 ENCODER_MODE_SPI_ABS_RLS                 = 259
 ENCODER_MODE_SPI_ABS_MA732               = 260
+ENCODER_MODE_SPI_ABS_EMS22A              = 261
 
 # ODrive.Controller.ControlMode
 CONTROL_MODE_VOLTAGE_CONTROL             = 0
@@ -214,6 +215,7 @@ class EncoderMode(enum.Enum):
     SPI_ABS_AEAT                             = 258
     SPI_ABS_RLS                              = 259
     SPI_ABS_MA732                            = 260
+    SPI_ABS_EMS22A                           = 261
 class ControlMode(enum.Enum):
     VOLTAGE_CONTROL                          = 0
     TORQUE_CONTROL                           = 1

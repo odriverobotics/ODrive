@@ -494,6 +494,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_AEAT:
         case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_MA732:
+        case MODE_SPI_ABS_EMS22A:
         {
             abs_spi_start_transaction();
             // Do nothing
@@ -593,6 +594,11 @@ void Encoder::abs_spi_cb(bool success) {
         case MODE_SPI_ABS_MA732: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
+        case MODE_SPI_ABS_EMS22A: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = (rawVal >> 6) & 0x03ff;
         } break;
 
         default: {
