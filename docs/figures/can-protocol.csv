@@ -2,15 +2,33 @@ CMD ID,Name,Sender,Signals,Start byte,Signal Type,Bits,Factor,Offset
 0x000,CANOpen NMT Message**,Master,-,-,-,-,-,-
 0x001,ODrive Heartbeat Message,Axis,"Axis Error
 Axis Current State
-Controller Status","0
+Motor Error Flag
+Encoder Error Flag
+Controller Error Flag
+Trajectory Done Flag","0
 4
-7","Unsigned Int
+5.0
+6.0
+7.0
+7.7","Unsigned Int
 Unsigned Int
-Bitfield","32
+Unsigned Int
+Unsigned Int
+Unsigned Int
+Unsigned Int","32
 8
-8","-
+1
+1
+1
+1","-
+-
+-
+-
 -
 -","-
+-
+-
+-
 -
 -"
 0x002,ODrive Estop Message,Master,-,-,-,-,-,-
@@ -93,7 +111,13 @@ IEEE 754 Float","32
 1","0
 0"
 0x016,Reboot ODrive,Master***,-,-,-,-,-,-
-0x017,Get Vbus Voltage,Master***,Vbus Voltage,0,IEEE 754 Float,32,1,0
+0x017,Get Bus Voltage and Current,Master***,"Bus Voltage
+Bus Current","0
+4","IEEE 754 Float
+IEEE 754 Float","32
+32","1
+1","0
+0"
 0x018,Clear Errors,Master,-,-,-,-,-,-
 0x019,Set Linear Count,Master,Position,0,Signed Int,32,1,0
 0x01A,Set Position Gain,Master,Pos Gain,0,IEEE 754 Float,32,1,0
@@ -104,4 +128,6 @@ IEEE 754 Float","32
 32","1
 1","0
 0"
+0x01C,Get ADC Voltage****,Master***,ADC Voltage,0,IEEE 754 Float,32,1,0
+0x01D,Get Controller Error*,Axis,Controller Error,0,Unsigned Int,32,1,0
 0x700,CANOpen Heartbeat Message**,Slave,-,-,-,-,-,-

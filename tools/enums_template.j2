@@ -3,6 +3,8 @@
 # To regenerate this file, nagivate to the top level of the ODrive repository and run:
 #   python Firmware/interface_generator_stub.py --definitions Firmware/odrive-interface.yaml --template tools/enums_template.j2 --output tools/odrive/enums.py
 
+import enum 
+
 [%- for _, enum in value_types.items() %]
 [%- if enum.is_enum %]
 
@@ -13,3 +15,11 @@
 [%- endif %]
 [%- endfor %]
 
+[%- for _, enum in value_types.items() %]
+[%- if enum.is_enum %]
+class [[(enum.parent.name if enum.name in ['Error', 'Mode', 'Protocol'] else '') + enum.name]][% if enum.is_flags %](enum.IntFlag)[% else %](enum.Enum)[% endif %]:
+[%- for k, value in enum['values'].items() %]
+    [[((k | to_macro_case)).ljust(40)]] = [% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %]
+[%- endfor %]
+[%- endif %]
+[%- endfor %]

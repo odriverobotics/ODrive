@@ -74,6 +74,7 @@ All multibyte values are little endian (aka Intel format, aka least significant 
     * These messages are call & response. The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
     * These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.  
     * These messages can be sent to either address on a given ODrive board.
+	* You must send a valid GPIO pin number in the first byte to recieve coreect ADC voltage feedback. Since you're both sending and receiving data the RTR bit must be set to false.
 
 
 Cyclic Messages
@@ -82,23 +83,72 @@ Cyclic Messages
 Cyclic messages are sent by ODrive on a timer without a request. As of firmware verion `0.5.4`, the Cyclic messsages are:
 
 .. list-table::
-   :widths: 25 25 50
+   :widths: 25 25 25 50
    :header-rows: 1
 
    * - ID
      - Name
-     - Rate (ms)
-   * - 0x001
-     - ODrive Heartbeat Message
+     - Config Variable
+     - Default Rate (ms)
+   * - 0x01
+     - Heartbeat
+     - `heartbeat_rate_ms`
      - 100
-   * - 0x009
-     - Encoder Estimates
+   * - 0x09
+     - Get Encoder Estimates
+     - `encoder_rate_ms`
      - 10
+   * - 0x03
+     - Get Motor Error
+     - `motor_error_rate_ms`
+     - 0
+   * - 0x04
+     - Get Encoder Error
+     - `encoder_error_rate_ms`
+     - 0
+   * - 0x1D
+     - Get Controller Error
+     - `controller_error_rate_ms`
+     - 0
+   * - 0x05
+     - Get Sensorless Error
+     - `sensorless_error_rate_ms`
+     - 0
+   * - 0x0A
+     - Get Encoder Count
+     - `encoder_count_rate_ms`
+     - 0
+   * - 0x14
+     - Get Iq
+     - `iq_rate_ms`
+     - 0
+   * - 0x15
+     - Get Sensorless Estimates
+     - `sensorless_rate_ms`
+     - 0
+   * - 0x17
+     - Get Bus Voltage Current
+     - `bus_vi_rate_ms`
+     - 0
+
 
 .. ID | Name | Rate (ms)
 .. --:    | :--  | :--
 .. 0x001 | ODrive Heartbeat Message | 100
 .. 0x009 | Encoder Estimates | 10
+
+.. Command ID | Message Name
+.. :-- | :-- | :--
+ .. 0x01 | `heartbeat_rate_ms` | Heartbeat
+ .. 0x09 | `encoder_rate_ms` | Get Encoder Estimates
+ .. 0x03 | `motor_error_rate_ms` | Get Motor Error
+ .. 0x04 | `encoder_error_rate_ms` | Get Encoder Error
+ .. 0x1D | `controller_error_rate_ms` | Get Controller Error
+ .. 0x05 | `sensorless_error_rate_ms` | Get Sensorless Error
+ .. 0x0A | `encoder_count_rate_ms` | Get Encoder Count
+ .. 0x14 | `iq_rate_ms` | Get Iq
+ .. 0x15 | `sensorless_rate_ms` | Get Sensorless Estimates
+ .. 0x17 | `bus_vi_rate_ms` | Get Bus Voltage Current
 
 These can be configured for each axis, see e.g. :code:`axis.config.can`.
 

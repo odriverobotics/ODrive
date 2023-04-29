@@ -600,6 +600,14 @@ interfaces:
       is_extended: bool
       heartbeat_rate_ms: uint32
       encoder_rate_ms: uint32
+      motor_error_rate_ms: uint32
+      encoder_error_rate_ms: uint32
+      controller_error_rate_ms: uint32
+      sensorless_error_rate_ms: uint32
+      encoder_count_rate_ms: uint32
+      iq_rate_ms: uint32
+      sensorless_rate_ms: uint32
+      bus_vi_rate_ms: uint32
 
   ODrive.ThermistorCurrentLimiter:
     c_is_class: False
@@ -1188,6 +1196,8 @@ interfaces:
             usually corresponds roughly to the current position of the axis.'
           }
       start_anticogging_calibration:
+      remove_anticogging_bias: {out: {val: float32}}
+      get_anticogging_value: {in: {index: uint32}, out: {val: float32}}
 
 
   ODrive.Encoder:

@@ -33,6 +33,7 @@ all:
 	@tup --quiet -no-environ-check
 	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
 	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/arduino_enums_template.j2 --output ../Arduino/ODriveArduino/ODriveEnums.h
+	@cd ../tools/ && $(PY_CMD) create_can_dbc.py
 
 # Copy libfibre files to odrivetool if they were built
 	@ ! test -f "fibre-cpp/build/libfibre-linux-amd64.so" || cp fibre-cpp/build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
