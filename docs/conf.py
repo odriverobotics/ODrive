@@ -79,5 +79,5 @@ html_js_files = [
     'https://docs.odriverobotics.com/docsInject.js'
 ]
 
-version = "0.5.4"
+version = "0.5.5"
 release = version
