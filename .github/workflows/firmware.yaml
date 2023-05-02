@@ -147,6 +147,14 @@ jobs:
           mkdir ${{ github.workspace }}/out
           cp ${{ github.workspace }}/Firmware/build/ODriveFirmware.elf ${{ github.workspace }}/out/firmware.elf
 
+      - name: Parse and format matrix.board_version
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        id: format-board-version
+        run: |
+          formatted_version=$(echo "${{ matrix.board_version }}" | sed 's/v\([0-9]\+\)\.\([0-9]\+\)-\([0-9]\+\)V/\1.\2.\3/')
+          echo "Formatted board version: $formatted_version"
+          echo "::set-output name=formatted_board_version::$formatted_version"
+
       - name: Upload firmware to ODrive release system
         if: ${{ steps.release-info.outputs.channel == 'master' && matrix.os == 'ubuntu-latest' && matrix.debug == false && (startsWith(matrix.board_version, 'v3.5-') || startsWith(matrix.board_version, 'v3.6-')) }}
         uses: ./.github/actions/upload-release
@@ -157,7 +165,7 @@ jobs:
           do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
           do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
           odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
-          product: ODrive ${{ matrix.board_version }}
+          board: ${{ steps.format-board-version.outputs.formatted_board_version }}
           app: default
           variant: public
 

@@ -23,8 +23,8 @@ inputs:
   odrive_api_key:
     description: 'Key to our release index server'
     required: true
-  product:
-    description: 'ODrive product name (for firmware releases only).'
+  board:
+    description: 'ODrive board version triplet ("PRODUCT_LINE.VERSION.VARIANT") (for firmware releases only).'
     required: false
   app:
     description: 'Firmware app name (default, bootloader) (for firmware releases only).'
@@ -95,6 +95,7 @@ runs:
       shell: python
       run: |
         import asyncio
+        import re
         import sys
         
         import aiohttp
@@ -115,8 +116,8 @@ runs:
             release_api = PrivateReleaseApi(api_client)
 
             qualifiers = {}
-            if '${{ inputs.product }}':
-              qualifiers['product'] = '${{ inputs.product }}'
+            if '${{ inputs.board }}':
+              qualifiers['board'] = tuple(int(i) for i in re.match(r'^([0-9]+)\.([0-9]+).([0-9]+)$', '${{ inputs.board }}').groups())
             if '${{ inputs.app }}':
               qualifiers['app'] = '${{ inputs.app }}'
             if '${{ inputs.variant }}':
