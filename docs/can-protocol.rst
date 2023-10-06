@@ -62,8 +62,10 @@ For example, an Axis ID of :code:`0x01` with a command of :code:`0x0C` would be 
 Messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+`Download CAN Messages as csv <./_static/can-protocol.csv>`_.
+
 .. csv-table:: CAN Messages
-   :file: figures/can-protocol.csv
+   :file: _static/can-protocol.csv
    :header-rows: 1
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
