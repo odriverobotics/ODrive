@@ -256,7 +256,7 @@ Once the error(s) have been identified and corrected, run :code:`odrv0.clear_err
 
 .. admonition:: Working on a hoverboard?
 
-    There is a :ref:`separate guide <hoverboard-doc>` specifically for hoverboard motors
+    There is a :ref:`separate guide <hoverboard-doc>` specifically for hoverboard motors with RC PWM input and the built-in hall sensors.
 
 
 Setting the Limits
@@ -279,7 +279,7 @@ Current limit
 
         odrv0.axis0.motor.config.current_lim = val
 
-    Once you have tuned the ODrive, you can increase this to 60A to increase performance.   
+    Once you have tuned the ODrive, you can increase this to your motor's maximum current, up to 60A, to increase performance.   
 
     .. dropdown:: Need more than 60A?
 
@@ -419,6 +419,7 @@ Motor Thermistor
 If using motor thermistor please see the :ref:`thermistors <thermistor-doc>` page for setup.
 
 
+.. _encoder-config:
 
 Encoder Configuration
 --------------------------------------------------------------------------------
