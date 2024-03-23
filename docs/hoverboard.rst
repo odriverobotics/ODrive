@@ -97,7 +97,9 @@ If you can't perform this test, a typical value is 16.
   odrv0.axis0.motor.config.current_control_bandwidth = 100
   odrv0.axis0.motor.config.torque_constant = 8.27 / <measured KV>
 
-
+Hall Sensor Configuration
+-------------------------------------------------------------------------------
+If using a hoverboard motor with an encoder attached instead of the internal hall sensors, use the encoder configuration section of the :ref:`Getting Started <encoder-config>` guide.
 If you set the encoder to hall mode (instead of incremental). 
 See the :ref:`pinout <encoders-hall-effect>` for instructions on how to plug in the hall feedback.
 The hall feedback has 6 states for every pole pair in the motor. 
@@ -132,6 +134,8 @@ Lets also start in velocity control mode since that is probably what you want fo
   odrv0.axis0.controller.config.vel_limit = 10
   odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 
+Calibration and Powering the Motor
+-------------------------------------------------------------------------------
 
 In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that require a reboot are applied first.
 
