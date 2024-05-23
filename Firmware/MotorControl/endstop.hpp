@@ -11,6 +11,7 @@ class Endstop {
         bool enabled = false;
         bool is_active_high = false;
         bool ignore_during_startup = false;
+        bool ignore_during_encoder_index_search = false;
 
         // custom setters
         Endstop* parent = nullptr;
