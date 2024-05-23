@@ -10,6 +10,7 @@ class Endstop {
         uint16_t gpio_num = 0;
         bool enabled = false;
         bool is_active_high = false;
+        bool ignore_during_startup = false;
 
         // custom setters
         Endstop* parent = nullptr;
