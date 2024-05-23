@@ -1409,6 +1409,7 @@ interfaces:
           enabled: {type: bool, c_setter: set_enabled}
           offset: {type: float32, unit: turns}
           is_active_high: bool
+          ignore_during_startup: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
   ODrive.MechanicalBrake:
