@@ -935,6 +935,10 @@ interfaces:
               Note that this feature is only works on devices with three current
               sensors (e.g. ODrive v4).
           dc_calib_tau: float32
+          max_dc_calib_koef:
+            type: float32
+            status: experimental
+            brief: Max current deviation from zero-level, relative to maximum allowed current
 
   ODrive.Oscilloscope:
     c_is_class: True

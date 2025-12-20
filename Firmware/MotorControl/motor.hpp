@@ -48,6 +48,7 @@ public:
         float I_leak_max = 0.1f;
 
         float dc_calib_tau = 0.2f;
+        float max_dc_calib_koef = 0.1f;
 
         // custom property setters
         Motor* parent = nullptr;

@@ -329,7 +329,7 @@ bool Motor::setup() {
     // Clip all current control to actual usable range
     max_allowed_current_ = max_unity_gain_current * phase_current_rev_gain_;
 
-    max_dc_calib_ = 0.1f * max_allowed_current_;
+    max_dc_calib_ = config_.max_dc_calib_koef * max_allowed_current_;
 
     if (!gate_driver_.init())
         return false;
