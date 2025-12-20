@@ -188,3 +188,42 @@ void delay_us(uint32_t us)
     }
 }
 
+float apply_deadzone(float fraction,
+        float fraction_min, float output_min,
+        float fraction_max, float output_max,
+        float deadzone_min, float deadzone_min_output,
+        float deadzone_max, float deadzone_max_output) {
+    float x1, y1, x2, y2;
+    float x = fraction;
+
+    if (fraction <= fraction_min)
+        return output_min;
+    else if (fraction >= fraction_max)
+        return output_max;
+    else if (!(fraction_min <= deadzone_min && deadzone_min < deadzone_max && deadzone_max <= fraction_max)) {
+        x1 = fraction_min;
+        x2 = fraction_max;
+        y1 = output_min;
+        y2 = output_max;
+    }
+    else if (x < deadzone_min) {
+        x1 = fraction_min;
+        x2 = deadzone_min;
+        y1 = output_min;
+        y2 = deadzone_min_output;
+    }
+    else if (x <= deadzone_max) {
+        x1 = deadzone_min;
+        x2 = deadzone_max;
+        y1 = deadzone_min_output;
+        y2 = deadzone_max_output;
+    }
+    else {
+        x1 = deadzone_max;
+        x2 = fraction_max;
+        y1 = deadzone_max_output;
+        y2 = output_max;
+    }
+    
+    return y1 + (x - x1) / (x2 - x1) * (y2 - y1);
+}

@@ -432,6 +432,9 @@ interfaces:
       endpoint: endpoint_ref
       min: float32
       max: float32
+      deadzone_min: float32
+      deadzone_max: float32
+      deadzone_value: float32
 
   ODrive.Axis:
     c_is_class: True
