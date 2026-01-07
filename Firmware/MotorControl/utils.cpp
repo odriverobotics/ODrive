@@ -188,42 +188,49 @@ void delay_us(uint32_t us)
     }
 }
 
-float apply_deadzone(float fraction,
-        float fraction_min, float output_min,
-        float fraction_max, float output_max,
-        float deadzone_min, float deadzone_min_output,
-        float deadzone_max, float deadzone_max_output) {
+float apply_deadband(float fraction,
+        float fraction_min, float level_min,
+        float fraction_max, float level_max,
+        bool deadband_enable,
+        float deadband_start, float deadband_start_level,
+        float deadband_end, float deadband_end_level) {
     float x1, y1, x2, y2;
     float x = fraction;
 
     if (fraction <= fraction_min)
-        return output_min;
+        return level_min;
     else if (fraction >= fraction_max)
-        return output_max;
-    else if (!(fraction_min <= deadzone_min && deadzone_min < deadzone_max && deadzone_max <= fraction_max)) {
+        return level_max;
+    else if (!(deadband_enable && 
+               fraction_min <= deadband_start && 
+               deadband_start <= deadband_end && 
+               deadband_end <= fraction_max)) {
         x1 = fraction_min;
         x2 = fraction_max;
-        y1 = output_min;
-        y2 = output_max;
+        y1 = level_min;
+        y2 = level_max;
     }
-    else if (x < deadzone_min) {
+    else if (x < deadband_start) {
         x1 = fraction_min;
-        x2 = deadzone_min;
-        y1 = output_min;
-        y2 = deadzone_min_output;
+        x2 = deadband_start;
+        y1 = level_min;
+        y2 = deadband_start_level;
     }
-    else if (x <= deadzone_max) {
-        x1 = deadzone_min;
-        x2 = deadzone_max;
-        y1 = deadzone_min_output;
-        y2 = deadzone_max_output;
+    else if (x <= deadband_end) {
+        x1 = deadband_start;
+        x2 = deadband_end;
+        y1 = deadband_start_level;
+        y2 = deadband_end_level;
     }
     else {
-        x1 = deadzone_max;
+        x1 = deadband_end;
         x2 = fraction_max;
-        y1 = deadzone_max_output;
-        y2 = output_max;
+        y1 = deadband_end_level;
+        y2 = level_max;
     }
-    
+
+    if (x1 >= x2)
+        return (y1 + y2) * 0.5f;
+
     return y1 + (x - x1) / (x2 - x1) * (y2 - y1);
 }

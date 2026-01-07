@@ -388,11 +388,12 @@ void update_brake_current() {
 static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
 {
     float fraction = get_adc_relative_voltage(get_gpio(gpio));
-    float value = apply_deadzone(fraction,
+    float value = apply_deadband(fraction,
         0.0, map->min,
         1.0, map->max,
-        map->deadzone_min, map->deadzone_value,
-        map->deadzone_max, map->deadzone_value
+        map->deadband_enable,
+        map->deadband_start, map->deadband_level,
+        map->deadband_end, map->deadband_level
     );
     fibre::set_endpoint_from_float(map->endpoint, value);
 }
