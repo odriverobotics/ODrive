@@ -153,9 +153,9 @@ bool Axis::do_checks(uint32_t timestamp) {
     motor_.do_checks(timestamp);
 
     // Check for endstop presses
-    if (min_endstop_.config_.enabled && min_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
+    if (min_endstop_.config_.enabled && min_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING) && !(min_endstop_.config_.ignore_during_startup && current_state_ == AXIS_STATE_UNDEFINED)) {
         error_ |= ERROR_MIN_ENDSTOP_PRESSED;
-    } else if (max_endstop_.config_.enabled && max_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
+    } else if (max_endstop_.config_.enabled && max_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING) && !(max_endstop_.config_.ignore_during_startup && current_state_ == AXIS_STATE_UNDEFINED)) {
         error_ |= ERROR_MAX_ENDSTOP_PRESSED;
     }
 
