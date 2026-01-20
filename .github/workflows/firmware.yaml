@@ -12,20 +12,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest]
         board_version: [v3.6-56V]
-        debug: [true]
-
-        include:
-          - {os: ubuntu-latest, board_version: v3.2, debug: false}
-          - {os: ubuntu-latest, board_version: v3.3, debug: false}
-          - {os: ubuntu-latest, board_version: v3.4-24V, debug: false}
-          - {os: ubuntu-latest, board_version: v3.4-48V, debug: false}
-          - {os: ubuntu-latest, board_version: v3.5-24V, debug: false}
-          - {os: ubuntu-latest, board_version: v3.5-48V, debug: false}
-          - {os: ubuntu-latest, board_version: v3.6-24V, debug: false}
-          - {os: ubuntu-latest, board_version: v3.6-56V, debug: false}
-
+        debug: [false]
+        
     runs-on: ${{ matrix.os }}
     outputs:
       channel: ${{ steps.release-info.outputs.channel }}
