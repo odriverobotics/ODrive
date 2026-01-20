@@ -432,6 +432,10 @@ interfaces:
       endpoint: endpoint_ref
       min: float32
       max: float32
+      deadband_enable: bool
+      deadband_start: float32
+      deadband_end: float32
+      deadband_level: float32
 
   ODrive.Axis:
     c_is_class: True
@@ -935,6 +939,10 @@ interfaces:
               Note that this feature is only works on devices with three current
               sensors (e.g. ODrive v4).
           dc_calib_tau: float32
+          max_dc_calib_koef:
+            type: float32
+            status: experimental
+            brief: Max current deviation from zero-level, relative to maximum allowed current
 
   ODrive.Oscilloscope:
     c_is_class: True

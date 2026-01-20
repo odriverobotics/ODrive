@@ -57,6 +57,10 @@ struct PWMMapping_t {
     endpoint_ref_t endpoint = {0, 0};
     float min = 0;
     float max = 0;
+    bool deadband_enable = false;
+    float deadband_start = 0;
+    float deadband_end = 1;
+    float deadband_level = 0;
 };
 
 // @brief general user configurable board configuration

@@ -1,4 +1,6 @@
 
+#include <utils.hpp>
+
 #include "pwm_input.hpp"
 #include "odrive_main.h"
 
@@ -39,8 +41,13 @@ void handle_pulse(int channel, uint32_t high_time) {
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = odrv.config_.pwm_mappings[channel].min +
-                  (fraction * (odrv.config_.pwm_mappings[channel].max - odrv.config_.pwm_mappings[channel].min));
+    float value = apply_deadband(fraction,
+        0.0, odrv.config_.pwm_mappings[channel].min,
+        1.0, odrv.config_.pwm_mappings[channel].max,
+        odrv.config_.pwm_mappings[channel].deadband_enable,
+        odrv.config_.pwm_mappings[channel].deadband_start, odrv.config_.pwm_mappings[channel].deadband_level,
+        odrv.config_.pwm_mappings[channel].deadband_end, odrv.config_.pwm_mappings[channel].deadband_level
+    );
 
     fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[channel].endpoint, value);
 }
