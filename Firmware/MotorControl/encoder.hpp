@@ -137,6 +137,7 @@ public:
     void abs_spi_cb(bool success);
     void abs_spi_cs_pin_init();
     bool abs_spi_pos_updated_ = false;
+    bool abs_spi_transaction_pending_ = false;
     Mode mode_ = MODE_INCREMENTAL;
     Stm32Gpio abs_spi_cs_gpio_;
     uint32_t abs_spi_cr1;

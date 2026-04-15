@@ -39,6 +39,10 @@ bool Stm32SpiArbiter::start() {
         __HAL_SPI_ENABLE(hspi_);
     }
     task.ncs_gpio.write(false);
+    // Give the slave a brief setup time before the first SPI clock edge.
+    for (volatile int i = 0; i < 64; ++i) {
+        __NOP();
+    }
     
     HAL_StatusTypeDef status = HAL_ERROR;
 

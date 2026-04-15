@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master, devel]
   push:
-    branches: [master, devel]
+    branches: [master, devel, ci-v3.6-56V]
     tags: ['fw-v*']
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest, windows-latest]
         board_version: [v3.6-56V]
         debug: [true]
 
@@ -80,11 +80,12 @@ jobs:
           # See https://github.com/osxfuse/osxfuse/issues/801#issuecomment-833419942
           brew install --cask macfuse
           brew install gromgit/fuse/tup-mac
-          pip3 install PyYAML Jinja2 jsonschema
+          python3 -m pip install --user PyYAML Jinja2 jsonschema
+          echo 'export PATH="$HOME/.local/bin:$PATH"' >> $GITHUB_ENV
 
         
       - name: Cache chocolatey
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         if: startsWith(matrix.os, 'windows-')
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey\gcc-arm-embedded
@@ -134,7 +135,7 @@ jobs:
 
       - name: Upload binary as artifact
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.debug == false }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.board_version }}
           path: |
@@ -147,6 +148,14 @@ jobs:
           mkdir ${{ github.workspace }}/out
           cp ${{ github.workspace }}/Firmware/build/ODriveFirmware.elf ${{ github.workspace }}/out/firmware.elf
 
+      - name: Parse and format matrix.board_version
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        id: format-board-version
+        run: |
+          formatted_version=$(echo "${{ matrix.board_version }}" | sed 's/v\([0-9]\+\)\.\([0-9]\+\)-\([0-9]\+\)V/\1.\2.\3/')
+          echo "Formatted board version: $formatted_version"
+          echo "::set-output name=formatted_board_version::$formatted_version"
+
       - name: Upload firmware to ODrive release system
         if: ${{ steps.release-info.outputs.channel == 'master' && matrix.os == 'ubuntu-latest' && matrix.debug == false && (startsWith(matrix.board_version, 'v3.5-') || startsWith(matrix.board_version, 'v3.6-')) }}
         uses: ./.github/actions/upload-release
@@ -157,7 +166,7 @@ jobs:
           do_access_key: ${{ secrets.DIGITALOCEAN_ACCESS_KEY }}
           do_secret_key: ${{ secrets.DIGITALOCEAN_SECRET_KEY }}
           odrive_api_key: ${{ secrets.ODRIVE_API_KEY }}
-          product: ODrive ${{ matrix.board_version }}
+          board: ${{ steps.format-board-version.outputs.formatted_board_version }}
           app: default
           variant: public
 

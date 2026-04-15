@@ -976,10 +976,12 @@ TRet* dynamic_get(size_t i, const std::tuple<Ts...>& t) {
 
 
 template<typename TDereferenceable, typename TResult>
-class simple_iterator : std::iterator<std::random_access_iterator_tag, TResult> {
+class simple_iterator {
     TDereferenceable *container_;
     size_t i_;
 public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = TResult;
     using reference = TResult;
     explicit simple_iterator(TDereferenceable& container, size_t pos) : container_(&container), i_(pos) {}
     simple_iterator& operator++() { ++i_; return *this; }
