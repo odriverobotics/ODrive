@@ -27,20 +27,25 @@ endif
 
 $(info board version: $(CONFIG_BOARD_VERSION))
 
-all:
+# Build firmware only (skip Python script generation)
+firmware:
 	@mkdir -p autogen
-	@$(PY_CMD) ../tools/odrive/version.py --output autogen/version.c
 	@tup --quiet -no-environ-check
-	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
-	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/arduino_enums_template.j2 --output ../Arduino/ODriveArduino/ODriveEnums.h
-	@cd ../tools/ && $(PY_CMD) create_can_dbc.py
 
 # Copy libfibre files to odrivetool if they were built
+libfibre-copy:
 	@ ! test -f "fibre-cpp/build/libfibre-linux-amd64.so" || cp fibre-cpp/build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-linux-armhf.so" || cp fibre-cpp/build/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-linux-aarch64.so" || cp fibre-cpp/build/libfibre-linux-aarch64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-macos-x86.dylib" || cp fibre-cpp/build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-windows-amd64.dll" || cp fibre-cpp/build/libfibre-windows-amd64.dll ../tools/odrive/pyfibre/fibre/
+
+flash: firmware
+	$(OPENOCD) \
+		-c 'reset halt' \
+		-c 'flash write_image erase $(FIRMWARE)' \
+		-c 'reset run' \
+		-c exit
 
 libfibre-linux-armhf:
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/fibre-linux-armhf-build:/build/build -w /build fibre-compiler configs/linux-armhf.config
@@ -106,4 +111,4 @@ unlock: unlock-stlink2
 
 .PHONY: stlink2-config flash-stlink2 gdb-stlink2 erase-stlink2 unlock-stlink2
 .PHONY: flash-bmp gdb-bmp
-.PHONY: all clean flash gdb erase unlock dfu fibre
+.PHONY: all clean flash gdb erase unlock dfu fibre firmware libfibre-copy

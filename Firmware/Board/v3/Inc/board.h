@@ -25,8 +25,14 @@
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
 #else
-#define SHUNT_RESISTANCE (500e-6f)
+//#define SHUNT_RESISTANCE (500e-6f)
+#define SHUNT_RESISTANCE (2e-3f)  //产品板
 #endif
+
+//qiaoxu add
+//#define ENCODER_USE_SPI_ABS_AMS
+#define ENCODER_USE_HALL
+
 
 #define AXIS_COUNT (2)
 

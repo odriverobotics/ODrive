@@ -17,33 +17,62 @@ public:
         {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
     struct Config_t {
-        Mode mode = MODE_INCREMENTAL;
+#ifdef ENCODER_USE_HALL
+        Mode mode = MODE_HALL;
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float calib_scan_distance = 16.0f * M_PI; // rad electrical
         float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
-        float bandwidth = 1000.0f;
-        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
-        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
-        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
+        float bandwidth = 100.0f;//1000.0f;
+        int32_t phase_offset = 46;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 0.5068125128746033f; // Sub-count phase alignment offset
+        int32_t cpr = 24;//(2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         float index_offset = 0.0f;
         bool use_index = false;
-        bool pre_calibrated = false; // If true, this means the offset stored in
+        bool pre_calibrated = true; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
-        int32_t direction = 0; // direction with respect to motor
+        int32_t direction = 1; // direction with respect to motor
         bool use_index_offset = true;
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint8_t hall_polarity = 0;
-        bool hall_polarity_calibrated = false;
+        bool hall_polarity_calibrated = true;
         std::array<float, 6> hall_edge_phcnt = hall_edge_defaults;
-        uint16_t abs_spi_cs_gpio_pin = 1;
-        uint16_t sincos_gpio_pin_sin = 3;
-        uint16_t sincos_gpio_pin_cos = 4;
-
+        uint16_t abs_spi_cs_gpio_pin = 7;
+        uint16_t sincos_gpio_pin_sin = 1;
+        uint16_t sincos_gpio_pin_cos = 2;
+#endif
+#ifdef ENCODER_USE_SPI_ABS_AMS
+        Mode mode = MODE_SPI_ABS_AMS;
+        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
+        float calib_scan_distance = 16.0f * M_PI; // rad electrical
+        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
+        float bandwidth = 500.0f;//1000.0f;
+        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 0.5f; // Sub-count phase alignment offset
+        int32_t cpr = 16384;//(2048 * 4);   // Default resolution of CUI-AMT102 encoder,
+        float index_offset = 0.0f;
+        bool use_index = false;
+        bool pre_calibrated = true; // If true, this means the offset stored in
+                                    // configuration is valid and does not need
+                                    // be determined by run_offset_calibration.
+                                    // In this case the encoder will enter ready
+                                    // state as soon as the index is found.
+        int32_t direction = -1; // direction with respect to motor
+        bool use_index_offset = true;
+        bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
+        bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
+        bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
+        uint8_t hall_polarity = 0;
+        bool hall_polarity_calibrated = true;
+        std::array<float, 6> hall_edge_phcnt = hall_edge_defaults;
+        uint16_t abs_spi_cs_gpio_pin = 7;
+        uint16_t sincos_gpio_pin_sin = 1;
+        uint16_t sincos_gpio_pin_cos = 2;
+#endif
 
         // custom setters
         Encoder* parent = nullptr;

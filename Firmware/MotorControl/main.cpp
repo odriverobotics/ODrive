@@ -818,6 +818,29 @@ extern "C" int main(void) {
         HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
     }
 
+    //qiaoxu 抱闸控制 axis0-gpio8 axis1-gpio5
+    get_gpio(8).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL); 
+    get_gpio(5).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL); 
+    get_gpio(8).write(true);//开闸
+    get_gpio(5).write(true);
+    // get_gpio(8).write(false);//抱闸
+    // get_gpio(5).write(false);
+    //qiaoxu 手动抱闸检测 axis0-gpio3 axis1-gpio4
+    get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+    get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+
+    //qiaoxu
+#ifdef ENCODER_USE_SPI_ABS_AMS
+    // 磁编电机，每次进闭环都会被覆盖。
+    axes[0].encoder_.config_.abs_spi_cs_gpio_pin = 7;
+    axes[0].encoder_.abs_spi_cs_pin_init();
+    axes[0].encoder_.config_.direction = -1;
+    axes[1].encoder_.config_.abs_spi_cs_gpio_pin = 6;
+    axes[1].encoder_.abs_spi_cs_pin_init();
+    axes[1].encoder_.config_.direction = 1;
+#endif
+    //axes[1].encoder_.config_.mode = Encoder::MODE_HALL;
+    ///////////////////////////////////////////
     // Init usb irq binary semaphore, and start with no tokens by removing the starting one.
     osSemaphoreDef(sem_usb_irq);
     sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);

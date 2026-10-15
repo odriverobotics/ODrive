@@ -46,13 +46,45 @@ void CANSimple::handle_can_message(const can_Message_t& msg) {
     // nodeID | CMD
     // 6 bits | 5 bits
     uint32_t nodeID = get_node_id(msg.id);
+    Axis& axis = axes[0];
 
-    for (auto& axis : axes) {
-        if ((axis.config_.can.node_id == nodeID) && (axis.config_.can.is_extended == msg.isExt)) {
-            do_command(axis, msg);
-            return;
-        }
+    if(msg.id == 0x219)
+    {
+        float vel = can_getSignal<float>(msg, 0, 32, true);
+        //给轴0设置速度输入
+        //axis.controller_.input_vel_ = vel;
+        axes[0].controller_.input_vel_ = vel;
     }
+
+    // if((msg.id == 0x219))
+    // {
+    //     float vel = can_getSignal<float>(msg, 0, 32, true);
+    //     if(vel != 0.0f)
+    //     {
+    //         if(axes[0].current_state_ != ODriveIntf::AxisIntf::AXIS_STATE_CLOSED_LOOP_CONTROL)
+    //         {
+    //             axes[0].requested_state_ = ODriveIntf::AxisIntf::AXIS_STATE_CLOSED_LOOP_CONTROL;
+    //         }
+    //         else
+    //         {
+    //             //给轴0设置速度输入
+    //             axes[0].controller_.input_vel_ = vel;
+    //             //canbus_->send_message(txmsg);
+    //         }
+    //     }
+    //     else
+    //     {
+    //         axes[0].requested_state_ = ODriveIntf::AxisIntf::AXIS_STATE_IDLE;
+    //         axes[0].controller_.input_vel_ = 0.0f;
+    //     }
+    // }
+
+    // for (auto& axis : axes) {
+    //     if ((axis.config_.can.node_id == nodeID) && (axis.config_.can.is_extended == msg.isExt)) {
+    //         do_command(axis, msg);
+    //         return;
+    //     }
+    // }
 }
 
 void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {

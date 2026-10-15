@@ -2,21 +2,6 @@
 	"folders": [
 		{
 			"path": "Firmware"
-		},
-		{
-			"path": "tools"
-		},
-		{
-			"path": "docs"
-		},
-		{
-			"path": "analysis"
-		},
-		{
-			"path": "Arduino"
-		},
-		{
-			"path": "GUI"
 		}
 	],
 	"settings": {
@@ -109,5 +94,8 @@
 			"image": "cpp",
 			"imageutils": "cpp"
 		}
+	},
+	"trae": {
+		"workspaceId": "4811426dac073260154bca5b8ce49c82"
 	}
 }
