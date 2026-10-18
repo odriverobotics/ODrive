@@ -1295,7 +1295,7 @@ interfaces:
         type: int32
         doc: The last (valid) position from an absolute encoder, if used.
       spi_error_rate: readonly float32
-      # --- temporary AS5048A bring-up diagnostics ---
+      # --- AS5048A bring-up diagnostics (read-only, no behaviour change) ---
       dbg_raw0: {type: readonly uint16, c_getter: "dbg_raw_[0]"}
       dbg_raw1: {type: readonly uint16, c_getter: "dbg_raw_[1]"}
       dbg_raw2: {type: readonly uint16, c_getter: "dbg_raw_[2]"}
@@ -1308,19 +1308,14 @@ interfaces:
       dbg_parity_fail: {type: readonly uint32, c_getter: dbg_parity_fail_}
       dbg_flag_fail: {type: readonly uint32, c_getter: dbg_flag_fail_}
       dbg_ok: {type: readonly uint32, c_getter: dbg_ok_}
-      dbg_pos: {type: readonly float32, c_getter: dbg_pos_}
-      dbg_pos_raw: {type: readonly float32, c_getter: dbg_pos_raw_}
-      dbg_mag: {type: readonly float32, c_getter: dbg_mag_}
-      dbg_diag: {type: readonly float32, c_getter: dbg_diag_}
-      dbg_tx: {type: readonly uint16, c_getter: dbg_tx_last_}
-      dbg_ignore_ef:
+      ignore_abs_spi_error_flag:
         type: bool
-        c_getter: dbg_ignore_ef_
-        c_setter: set_dbg_ignore_ef
+        c_getter: ignore_abs_spi_error_flag_
+        c_setter: set_ignore_abs_spi_error_flag
         doc: |
-          TEMPORARY bring-up switch. Accept AS5048A frames even if the encoder
-          sets its error flag (bit 14). The flag is not persisted and resets on
-          reboot. Only use it when the angle is known to read correctly.
+          Accept AS5048A frames even though the encoder asserts its magnetic
+          field error flag (bit 14). Not persisted, resets to false on reboot.
+          Only use when the angle is verified to read correctly.
       config:
         c_is_class: False
         attributes:

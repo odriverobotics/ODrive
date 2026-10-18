@@ -146,19 +146,16 @@ public:
     uint16_t abs_spi_dma_rx_[1];
     Stm32SpiArbiter::SpiTask spi_task_;
 
-    // --- temporary AS5048A bring-up diagnostics ---
+    // --- AS5048A bring-up diagnostics ---
     uint16_t dbg_raw_[8] = {0};   // last 8 raw frames, dbg_raw_[0] = newest
     uint32_t dbg_total_ = 0;      // completed SPI transactions
     uint32_t dbg_parity_fail_ = 0;
     uint32_t dbg_flag_fail_ = 0;
     uint32_t dbg_ok_ = 0;
-    float dbg_pos_ = 0.0f;        // last accepted position
-    float dbg_pos_raw_ = 0.0f;    // last angle bits, error flag ignored
-    float dbg_mag_ = -1.0f;       // AS5048A MAGNITUDE register (0x7FFE)
-    float dbg_diag_ = -1.0f;      // AS5048A DIAG/AGC register (0x7FFD)
-    uint16_t dbg_tx_last_ = 0xFFFF;
-    bool dbg_ignore_ef_ = false;  // temporary: accept AS5048A frames with EF set
-    void set_dbg_ignore_ef(bool value) { dbg_ignore_ef_ = value; }
+    // Accept AS5048A frames even though the encoder asserts its magnetic field
+    // error flag (bit 14). Not persisted: resets to false on reboot.
+    bool ignore_abs_spi_error_flag_ = false;
+    void set_ignore_abs_spi_error_flag(bool value) { ignore_abs_spi_error_flag_ = value; }
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
