@@ -1295,6 +1295,20 @@ interfaces:
         type: int32
         doc: The last (valid) position from an absolute encoder, if used.
       spi_error_rate: readonly float32
+      # --- temporary AS5048A bring-up diagnostics ---
+      dbg_raw0: {type: readonly uint16, c_getter: "dbg_raw_[0]"}
+      dbg_raw1: {type: readonly uint16, c_getter: "dbg_raw_[1]"}
+      dbg_raw2: {type: readonly uint16, c_getter: "dbg_raw_[2]"}
+      dbg_raw3: {type: readonly uint16, c_getter: "dbg_raw_[3]"}
+      dbg_raw4: {type: readonly uint16, c_getter: "dbg_raw_[4]"}
+      dbg_raw5: {type: readonly uint16, c_getter: "dbg_raw_[5]"}
+      dbg_raw6: {type: readonly uint16, c_getter: "dbg_raw_[6]"}
+      dbg_raw7: {type: readonly uint16, c_getter: "dbg_raw_[7]"}
+      dbg_total: {type: readonly uint32, c_getter: dbg_total_}
+      dbg_parity_fail: {type: readonly uint32, c_getter: dbg_parity_fail_}
+      dbg_flag_fail: {type: readonly uint32, c_getter: dbg_flag_fail_}
+      dbg_ok: {type: readonly uint32, c_getter: dbg_ok_}
+      dbg_pos: {type: readonly float32, c_getter: dbg_pos_}
       config:
         c_is_class: False
         attributes:

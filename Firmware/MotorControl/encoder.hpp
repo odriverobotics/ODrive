@@ -146,6 +146,14 @@ public:
     uint16_t abs_spi_dma_rx_[1];
     Stm32SpiArbiter::SpiTask spi_task_;
 
+    // --- temporary AS5048A bring-up diagnostics ---
+    uint16_t dbg_raw_[8] = {0};   // last 8 raw frames, dbg_raw_[0] = newest
+    uint32_t dbg_total_ = 0;      // completed SPI transactions
+    uint32_t dbg_parity_fail_ = 0;
+    uint32_t dbg_flag_fail_ = 0;
+    uint32_t dbg_ok_ = 0;
+    float dbg_pos_ = 0.0f;        // last accepted position
+
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
     }

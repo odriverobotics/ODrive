@@ -576,10 +576,25 @@ void Encoder::abs_spi_cb(bool success) {
     switch (mode_) {
         case MODE_SPI_ABS_AMS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
+
+            // --- temporary bring-up diagnostics ---
+            for (int i = 7; i > 0; --i) {
+                dbg_raw_[i] = dbg_raw_[i - 1];
+            }
+            dbg_raw_[0] = rawVal;
+            dbg_total_++;
+
             // check if parity is correct (even) and error flag clear
-            if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+            if (ams_parity(rawVal)) {
+                dbg_parity_fail_++;
                 goto done;
             }
+            if ((rawVal >> 14) & 1) {
+                dbg_flag_fail_++;
+                goto done;
+            }
+            dbg_ok_++;
+            dbg_pos_ = (float)(rawVal & 0x3fff);
             pos = rawVal & 0x3fff;
         } break;
 
