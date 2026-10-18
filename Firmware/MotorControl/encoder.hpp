@@ -157,6 +157,8 @@ public:
     float dbg_mag_ = -1.0f;       // AS5048A MAGNITUDE register (0x7FFE)
     float dbg_diag_ = -1.0f;      // AS5048A DIAG/AGC register (0x7FFD)
     uint16_t dbg_tx_last_ = 0xFFFF;
+    bool dbg_ignore_ef_ = false;  // temporary: accept AS5048A frames with EF set
+    void set_dbg_ignore_ef(bool value) { dbg_ignore_ef_ = value; }
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;

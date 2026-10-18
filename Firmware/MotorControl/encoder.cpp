@@ -614,7 +614,7 @@ void Encoder::abs_spi_cb(bool success) {
             }
             if ((rawVal >> 14) & 1) {
                 dbg_flag_fail_++;
-                goto done;
+                if (!dbg_ignore_ef_) goto done;
             }
             dbg_ok_++;
             dbg_pos_ = (float)(rawVal & 0x3fff);
