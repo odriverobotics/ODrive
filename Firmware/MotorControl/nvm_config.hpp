@@ -26,7 +26,7 @@
 
 // IMPORTANT: if you change, reorder or otherwise modify any of the fields in
 // the config structs without changing its total length, make sure to increment this number:
-static constexpr uint16_t config_version = 0x0001;
+static constexpr uint16_t config_version = 0x0002;
 
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/

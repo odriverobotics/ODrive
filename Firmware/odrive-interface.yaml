@@ -1308,14 +1308,6 @@ interfaces:
       dbg_parity_fail: {type: readonly uint32, c_getter: dbg_parity_fail_}
       dbg_flag_fail: {type: readonly uint32, c_getter: dbg_flag_fail_}
       dbg_ok: {type: readonly uint32, c_getter: dbg_ok_}
-      ignore_abs_spi_error_flag:
-        type: bool
-        c_getter: ignore_abs_spi_error_flag_
-        c_setter: set_ignore_abs_spi_error_flag
-        doc: |
-          Accept AS5048A frames even though the encoder asserts its magnetic
-          field error flag (bit 14). Not persisted, resets to false on reboot.
-          Only use when the angle is verified to read correctly.
       config:
         c_is_class: False
         attributes:
@@ -1378,6 +1370,14 @@ interfaces:
           sincos_gpio_pin_cos:
             type: uint16
             doc: Analog cosine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
+          abs_spi_ignore_error_flag:
+            type: bool
+            doc: |
+              Accept AS5048A frames even though the encoder asserts its magnetic
+              field error flag (bit 14). The flag indicates the magnet is out of
+              spec (air gap, centring or magnetisation type); a board that always
+              reports it while still reading a clean, full-range angle needs this
+              to be usable. Verify the angle before enabling.
     functions:
       set_linear_count:
         in:

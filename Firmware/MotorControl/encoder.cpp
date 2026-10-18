@@ -591,7 +591,7 @@ void Encoder::abs_spi_cb(bool success) {
             // bit 14: AS5048A magnetic field error flag
             if ((rawVal >> 14) & 1) {
                 dbg_flag_fail_++;
-                if (!ignore_abs_spi_error_flag_) {
+                if (!config_.abs_spi_ignore_error_flag) {
                     goto done;
                 }
             }

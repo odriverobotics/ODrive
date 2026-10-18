@@ -43,6 +43,11 @@ public:
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
+        // Accept AS5048A frames even though the encoder asserts its magnetic
+        // field error flag (bit 14). Only enable this when the angle has been
+        // verified to read correctly over the full range: the flag itself
+        // indicates the magnet is out of spec (air gap, centring, type).
+        bool abs_spi_ignore_error_flag = false;
 
 
         // custom setters
@@ -152,10 +157,6 @@ public:
     uint32_t dbg_parity_fail_ = 0;
     uint32_t dbg_flag_fail_ = 0;
     uint32_t dbg_ok_ = 0;
-    // Accept AS5048A frames even though the encoder asserts its magnetic field
-    // error flag (bit 14). Not persisted: resets to false on reboot.
-    bool ignore_abs_spi_error_flag_ = false;
-    void set_ignore_abs_spi_error_flag(bool value) { ignore_abs_spi_error_flag_ = value; }
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
