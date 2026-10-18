@@ -153,6 +153,10 @@ public:
     uint32_t dbg_flag_fail_ = 0;
     uint32_t dbg_ok_ = 0;
     float dbg_pos_ = 0.0f;        // last accepted position
+    float dbg_pos_raw_ = 0.0f;    // last angle bits, error flag ignored
+    float dbg_mag_ = -1.0f;       // AS5048A MAGNITUDE register (0x7FFE)
+    float dbg_diag_ = -1.0f;      // AS5048A DIAG/AGC register (0x7FFD)
+    uint16_t dbg_tx_last_ = 0xFFFF;
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;

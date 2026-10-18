@@ -1309,6 +1309,10 @@ interfaces:
       dbg_flag_fail: {type: readonly uint32, c_getter: dbg_flag_fail_}
       dbg_ok: {type: readonly uint32, c_getter: dbg_ok_}
       dbg_pos: {type: readonly float32, c_getter: dbg_pos_}
+      dbg_pos_raw: {type: readonly float32, c_getter: dbg_pos_raw_}
+      dbg_mag: {type: readonly float32, c_getter: dbg_mag_}
+      dbg_diag: {type: readonly float32, c_getter: dbg_diag_}
+      dbg_tx: {type: readonly uint16, c_getter: dbg_tx_last_}
       config:
         c_is_class: False
         attributes:

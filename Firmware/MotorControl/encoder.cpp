@@ -532,6 +532,19 @@ void Encoder::decode_hall_samples() {
 bool Encoder::abs_spi_start_transaction() {
     if (mode_ & MODE_FLAG_ABS){
         if (Stm32SpiArbiter::acquire_task(&spi_task_)) {
+            // --- temporary diagnostics: probe AS5048A registers every 64th frame ---
+            if (mode_ == MODE_SPI_ABS_AMS) {
+                static uint32_t dbg_seq = 0;
+                dbg_seq++;
+                if ((dbg_seq & 0x3f) == 0) {
+                    abs_spi_dma_tx_[0] = 0x7FFE; // MAGNITUDE
+                } else if ((dbg_seq & 0x3f) == 0x20) {
+                    abs_spi_dma_tx_[0] = 0x7FFD; // DIAG / AGC
+                } else {
+                    abs_spi_dma_tx_[0] = 0xFFFF; // ANGLE
+                }
+                dbg_tx_last_ = abs_spi_dma_tx_[0];
+            }
             spi_task_.ncs_gpio = abs_spi_cs_gpio_;
             spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
             spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
@@ -583,6 +596,16 @@ void Encoder::abs_spi_cb(bool success) {
             }
             dbg_raw_[0] = rawVal;
             dbg_total_++;
+
+            if (dbg_tx_last_ == 0x7FFE) { // MAGNITUDE response
+                dbg_mag_ = (float)(rawVal & 0x3fff);
+                goto done;
+            }
+            if (dbg_tx_last_ == 0x7FFD) { // DIAG / AGC response
+                dbg_diag_ = (float)(rawVal & 0x3fff);
+                goto done;
+            }
+            dbg_pos_raw_ = (float)(rawVal & 0x3fff);
 
             // check if parity is correct (even) and error flag clear
             if (ams_parity(rawVal)) {
