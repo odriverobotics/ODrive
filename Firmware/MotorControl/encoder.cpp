@@ -597,6 +597,27 @@ void Encoder::abs_spi_cb(bool success) {
             }
             dbg_ok_++;
             pos = rawVal & 0x3fff;
+
+            // Plausibility filter: at 8 kHz a 3.6 turn/s machine moves less
+            // than 8 counts per control period, so a frame that jumps further
+            // than 64 counts is corrupted (bit errors can keep even parity and
+            // slip past the parity check). Such a jump would spike the velocity
+            // estimate to hundreds of turn/s and trip the overspeed fault.
+            if (abs_spi_have_last_pos_) {
+                int32_t delta = (int32_t)pos - (int32_t)abs_spi_last_pos_;
+                if (delta > config_.cpr / 2) {
+                    delta -= config_.cpr;
+                }
+                if (delta < -config_.cpr / 2) {
+                    delta += config_.cpr;
+                }
+                if (std::abs(delta) > 64) {
+                    dbg_jump_reject_++;
+                    goto done;
+                }
+            }
+            abs_spi_last_pos_ = pos;
+            abs_spi_have_last_pos_ = true;
         } break;
 
         case MODE_SPI_ABS_CUI: {

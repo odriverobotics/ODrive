@@ -1308,6 +1308,7 @@ interfaces:
       dbg_parity_fail: {type: readonly uint32, c_getter: dbg_parity_fail_}
       dbg_flag_fail: {type: readonly uint32, c_getter: dbg_flag_fail_}
       dbg_ok: {type: readonly uint32, c_getter: dbg_ok_}
+      dbg_jump_reject: {type: readonly uint32, c_getter: dbg_jump_reject_}
       config:
         c_is_class: False
         attributes:

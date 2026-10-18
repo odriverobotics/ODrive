@@ -157,6 +157,9 @@ public:
     uint32_t dbg_parity_fail_ = 0;
     uint32_t dbg_flag_fail_ = 0;
     uint32_t dbg_ok_ = 0;
+    uint32_t dbg_jump_reject_ = 0;  // frames dropped by the plausibility filter
+    uint16_t abs_spi_last_pos_ = 0;
+    bool abs_spi_have_last_pos_ = false;
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
