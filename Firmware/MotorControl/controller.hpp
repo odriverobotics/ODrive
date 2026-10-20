@@ -51,8 +51,8 @@ public:
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration(). Set to -1 to select sensorless estimator.
         float mechanical_power_bandwidth = 20.0f; // [rad/s] filter cutoff for mechanical power for spinout detction
         float electrical_power_bandwidth = 20.0f; // [rad/s] filter cutoff for electrical power for spinout detection
-        float spinout_electrical_power_threshold = 10.0f; // [W] electrical power threshold for spinout detection
-        float spinout_mechanical_power_threshold = -10.0f; // [W] mechanical power threshold for spinout detection
+        float spinout_electrical_power_threshold = 1e9;//10.0f; //qiaoxu modify 如果不改小的话当速度环PID不合适抖动时易报错controller.cpp:422-440：ERROR_SPINOUT_DETECTED，ERROR_UNKNOWN_TORQUE // [W] electrical power threshold for spinout detection
+        float spinout_mechanical_power_threshold = -1e9;//-10.0f; //qiaoxu modify 同上 [W] mechanical power threshold for spinout detection
 
         // custom setters
         Controller* parent;

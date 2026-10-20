@@ -876,16 +876,32 @@ extern "C" int main(void) {
     get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
     get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
 
+    // 不论霍尔还是磁编: 磁编的 CS 必须一直保持高电平(未选中),
+    // 否则它会在 SPI3 上抢 MISO, 导致 DRV8301 寄存器回读失败 -> 双轴 DRV 故障
+    get_gpio(7).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);   // M0 AS5047 CS
+    get_gpio(7).write(true);
+    get_gpio(6).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);   // M1 AS5047 CS
+    get_gpio(6).write(true);
     //qiaoxu
 #ifdef ENCODER_USE_SPI_ABS_AMS
     // 磁编电机，每次进闭环都会被覆盖。
     axes[0].encoder_.config_.abs_spi_cs_gpio_pin = 7;
     axes[0].encoder_.abs_spi_cs_pin_init();
     axes[0].encoder_.config_.direction = -1;
+    axes[0].motor_.config_.set_current_control_bandwidth(300.0f);
     axes[1].encoder_.config_.abs_spi_cs_gpio_pin = 6;
     axes[1].encoder_.abs_spi_cs_pin_init();
     axes[1].encoder_.config_.direction = 1;
+    axes[1].motor_.config_.set_current_control_bandwidth(300.0f);
 #endif
+
+#ifdef ENCODER_USE_HALL
+    axes[0].encoder_.config_.direction = 1;
+    axes[0].motor_.config_.set_current_control_bandwidth(64.0f);
+    axes[1].encoder_.config_.direction = 1;
+    axes[1].motor_.config_.set_current_control_bandwidth(64.0f);
+#endif
+
     //axes[1].encoder_.config_.mode = Encoder::MODE_HALL;
     ///////////////////////////////////////////
     // Init usb irq binary semaphore, and start with no tokens by removing the starting one.

@@ -33,6 +33,12 @@
 //#define ENCODER_USE_SPI_ABS_AMS
 #define ENCODER_USE_HALL
 
+//qiaoxu add: 驻坡增益调度开关
+//  定义   : 零速附近检测到较大 Iq 时临时提高 vel_gain / vel_integrator_gain (原行为)
+//  注释掉 : 关闭调度, 增益始终等于上位机通过 0x208 / 0x221 下发的基准 PID
+//  用途   : A/B 对比, 判断振荡是否由该调度引入
+#define ENABLE_ZHUPO_GAIN_SCHED
+
 //qiaoxu add: 通信外设裁剪开关 (不用的外设注释掉, 对应代码不参与编译, 可减小固件体积)
 //  USE_UART_A : UART4   (GPIO1/GPIO2, ODrive 的 uart0)
 //  USE_UART_B : USART2  (GPIO3/GPIO4, ODrive 的 uart1)

@@ -570,6 +570,9 @@ void CANSimple::set_vlago_input_vel_callback(const can_Message_t& msg) {
 #endif
 
         // 3---驻坡: 零速附近且电流较大时提高增益, 稳定后恢复
+        // 编译开关见 board.h: 注释掉 ENABLE_ZHUPO_GAIN_SCHED 即整体关闭该调度,
+        // 关闭后增益始终跟随上位机 (0x208 / 0x221) 下发的基准 PID, 便于 A/B 对比。
+#ifdef ENABLE_ZHUPO_GAIN_SCHED
         static uint8_t zhupo_cnt[AXIS_COUNT] = {};
         static uint8_t zhupo_flag[AXIS_COUNT] = {};
         if ((std::fabs(input_vel[i]) < 1.0f) && (std::fabs(vel_est) <= 5.0f)) {
@@ -608,6 +611,15 @@ void CANSimple::set_vlago_input_vel_callback(const can_Message_t& msg) {
             axis.controller_.config_.vel_integrator_gain = PID_I;
 #endif
         }
+#else   // !ENABLE_ZHUPO_GAIN_SCHED: 不做驻坡增益调度, 始终用上位机下发值
+#ifdef ENCODER_USE_SPI_ABS_AMS
+        axis.controller_.config_.vel_gain = PID_P_ENCODER_ABS;
+        axis.controller_.config_.vel_integrator_gain = PID_I_ENCODER_ABS;
+#else
+        axis.controller_.config_.vel_gain = PID_P;
+        axis.controller_.config_.vel_integrator_gain = PID_I;
+#endif
+#endif  // ENABLE_ZHUPO_GAIN_SCHED
     }
 }
 
@@ -919,7 +931,7 @@ bool CANSimple::send_vel_estimate() {
 bool CANSimple::send_heartbeat() {
     // 未完成识别前打开抱闸, 避免校准被机械闸卡住
     if (!(axes[0].encoder_.config_.pre_calibrated && axes[1].encoder_.config_.pre_calibrated)) {
-        set_brake(0, true);
+        set_brake(0, true);//开闸
         set_brake(1, true);
     } else {
         msg_lost_count_++;

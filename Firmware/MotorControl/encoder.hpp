@@ -22,9 +22,9 @@ public:
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float calib_scan_distance = 16.0f * M_PI; // rad electrical
         float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
-        float bandwidth = 100.0f;//1000.0f;
-        int32_t phase_offset = 46;        // Offset between encoder count and rotor electrical phase
-        float phase_offset_float = 0.5068125128746033f; // Sub-count phase alignment offset
+        float bandwidth = 60.0f;//1000.0f;
+        int32_t phase_offset = 45;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 1.4791250228881836; // Sub-count phase alignment offset
         int32_t cpr = 24;//(2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         float index_offset = 0.0f;
         bool use_index = false;
