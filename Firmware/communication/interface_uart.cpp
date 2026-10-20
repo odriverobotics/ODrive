@@ -12,6 +12,9 @@
 #include <freertos_vars.h>
 #include <odrive_main.h>
 
+//qiaoxu add: 未启用任何 UART 时, 整个 UART 通信服务不参与编译
+#ifdef USE_UART_ANY
+
 #define UART_TX_BUFFER_SIZE 64
 #define UART_RX_BUFFER_SIZE 64
 
@@ -112,7 +115,9 @@ LegacyProtocolStreamBased fibre_over_uart(&uart_rx_stream, &uart_tx_stream);
 
 fibre::AsyncStreamSinkMultiplexer<2> uart_tx_multiplexer(uart_tx_stream);
 fibre::BufferedStreamSink<64> uart0_stdout_sink(uart_tx_multiplexer); // Used in communication.cpp
+#ifdef USE_ASCII_PROTOCOL
 AsciiProtocol ascii_over_uart(&uart_rx_stream, &uart_tx_multiplexer);
+#endif
 
 bool uart0_stdout_pending = false;
 
@@ -121,10 +126,13 @@ static void uart_server_thread(void * ctx) {
 
     if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_FIBRE) {
         fibre_over_uart.start({});
-    } else if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
+    }
+#ifdef USE_ASCII_PROTOCOL
+    else if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
             || odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
         ascii_over_uart.start();
     }
+#endif
 
     for (;;) {
         osEvent event = osMessageGet(uart_event_queue, osWaitForever);
@@ -204,3 +212,5 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
         osMessagePut(uart_event_queue, 2, 0);
     }
 }
+
+#endif // USE_UART_ANY

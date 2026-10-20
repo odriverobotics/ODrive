@@ -44,8 +44,8 @@ MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
 CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 64K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 768K 
-/* FLASH (rx)      : ORIGIN = 0x800C000, LENGTH = 720K */
+/* FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 768K */
+FLASH (rx)      : ORIGIN = 0x800C000, LENGTH = 336k /*720K*/ 
 NVM (r)         : ORIGIN = 0x80C0000, LENGTH = 256K
 }
 
@@ -59,6 +59,15 @@ SECTIONS
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
   } >FLASH
+
+  /* 添加版本信息段 */
+	.version_info :
+	{
+	    . = ALIGN(4);
+	    /* 版本信息位于0x0800C188*/
+	    KEEP(*(.version_info))
+	    . = ALIGN(4);
+	} >FLASH
 
   /* The program code and other data goes into FLASH */
   .text :

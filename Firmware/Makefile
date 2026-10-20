@@ -32,6 +32,9 @@ firmware:
 	@mkdir -p autogen
 	@tup --quiet -no-environ-check
 
+# qiaoxu fix: 原来没有 all 规则, 导致 flash 不会重新编译
+all: firmware
+
 # Copy libfibre files to odrivetool if they were built
 libfibre-copy:
 	@ ! test -f "fibre-cpp/build/libfibre-linux-amd64.so" || cp fibre-cpp/build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
@@ -39,13 +42,6 @@ libfibre-copy:
 	@ ! test -f "fibre-cpp/build/libfibre-linux-aarch64.so" || cp fibre-cpp/build/libfibre-linux-aarch64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-macos-x86.dylib" || cp fibre-cpp/build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-windows-amd64.dll" || cp fibre-cpp/build/libfibre-windows-amd64.dll ../tools/odrive/pyfibre/fibre/
-
-flash: firmware
-	$(OPENOCD) \
-		-c 'reset halt' \
-		-c 'flash write_image erase $(FIRMWARE)' \
-		-c 'reset run' \
-		-c exit
 
 libfibre-linux-armhf:
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/fibre-linux-armhf-build:/build/build -w /build fibre-compiler configs/linux-armhf.config
@@ -68,10 +64,12 @@ libfibre-all:
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
-flash-stlink2: all
+# qiaoxu fix: 必须刷 HEX(只含 0x0800C000 起的真实数据),
+# 刷 ELF 会把 ELF 头/填充写到 0x08000000..0x0800BFFF, 冲掉 boot 和 0x08008000 的 app1_ok 标志
+flash-stlink2: firmware
 	$(OPENOCD) \
 		-c 'reset halt' \
-		-c 'flash write_image erase $(FIRMWARE)' \
+		-c 'flash write_image erase $(FIRMWARE_HEX)' \
 		-c 'reset run' \
 		-c exit
 

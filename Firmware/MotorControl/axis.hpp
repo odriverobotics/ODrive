@@ -52,8 +52,8 @@ public:
     static LockinConfig_t default_lockin();
 
     struct CANConfig_t {
-        uint32_t node_id = 0;
-        bool is_extended = false;
+        uint32_t node_id = 2;//qiaoxu modify
+        bool is_extended = true;//qiaoxu modify
         uint32_t heartbeat_rate_ms = 100;
         uint32_t encoder_rate_ms = 10;
         uint32_t motor_error_rate_ms = 0;
@@ -107,13 +107,14 @@ public:
     };
 
     struct CAN_t {
-        uint32_t last_heartbeat = 0;
-        uint32_t last_encoder = 0;
-        uint32_t last_motor_error = 0;
-        uint32_t last_encoder_error = 0;
+        uint32_t last_heartbeat = 0;        // 0x274
+        uint32_t last_encoder = 0;          // 0x21C 速度反馈
+        uint32_t last_motor_error = 0;      // 0x272/0x273
+        uint32_t last_encoder_error = 0;    // 0x275/0x276
         uint32_t last_controller_error = 0;
         uint32_t last_sensorless_error = 0;
-        uint32_t last_encoder_count = 0;
+        uint32_t last_encoder_count = 0;    // 0x21A/0x21E
+        uint32_t last_axis_error = 0;       // 0x270/0x271
         uint32_t last_iq = 0;
         uint32_t last_sensorless = 0;
         uint32_t last_bus_vi = 0;

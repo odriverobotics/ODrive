@@ -53,6 +53,9 @@
 #include "gpio.h"
 #include "dma.h"
 
+//qiaoxu add: 引入 USE_UART_A / USE_UART_B 外设裁剪开关
+#include "board.h"
+
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -64,6 +67,7 @@ DMA_HandleTypeDef hdma_uart4_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
+#ifdef USE_UART_A
 /* UART4 init function */
 void MX_UART4_Init(void)
 {
@@ -82,6 +86,9 @@ void MX_UART4_Init(void)
   }
 
 }
+#endif /* USE_UART_A */
+
+#ifdef USE_UART_B
 /* USART2 init function */
 
 void MX_USART2_UART_Init(void)
@@ -101,10 +108,13 @@ void MX_USART2_UART_Init(void)
   }
 
 }
+#endif /* USE_UART_B */
 
 void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
+  (void)uartHandle;
 
+#ifdef USE_UART_A
   if(uartHandle->Instance==UART4)
   {
   /* USER CODE BEGIN UART4_MspInit 0 */
@@ -157,7 +167,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
   /* USER CODE END UART4_MspInit 1 */
   }
-  else if(uartHandle->Instance==USART2)
+#endif /* USE_UART_A */
+
+#ifdef USE_UART_B
+  if(uartHandle->Instance==USART2)
   {
   /* USER CODE BEGIN USART2_MspInit 0 */
 
@@ -209,11 +222,14 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
   /* USER CODE END USART2_MspInit 1 */
   }
+#endif /* USE_UART_B */
 }
 
 void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 {
+  (void)uartHandle;
 
+#ifdef USE_UART_A
   if(uartHandle->Instance==UART4)
   {
   /* USER CODE BEGIN UART4_MspDeInit 0 */
@@ -232,7 +248,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
   /* USER CODE END UART4_MspDeInit 1 */
   }
-  else if(uartHandle->Instance==USART2)
+#endif /* USE_UART_A */
+
+#ifdef USE_UART_B
+  if(uartHandle->Instance==USART2)
   {
   /* USER CODE BEGIN USART2_MspDeInit 0 */
 
@@ -250,6 +269,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
   /* USER CODE END USART2_MspDeInit 1 */
   }
+#endif /* USE_UART_B */
 } 
 
 /* USER CODE BEGIN 1 */

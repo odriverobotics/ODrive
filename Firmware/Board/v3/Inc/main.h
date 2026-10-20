@@ -67,8 +67,8 @@
 
 /* Private define ------------------------------------------------------------*/
 #define TIM_1_8_CLOCK_HZ 168000000
-//#define TIM_1_8_PERIOD_CLOCKS 3500//24khz 原程序24khz跑两个电机的中断时间不够，会报错：MOTOR_ERROR_CONTROL_DEADLINE_MISSED,磁编电机还会报ENCODER_ERROR_ABS_SPI_COM_FAIL
-#define TIM_1_8_PERIOD_CLOCKS 7000  //qiaoxu modify 12khz
+#define TIM_1_8_PERIOD_CLOCKS 3500//24khz 原程序24khz跑两个电机的中断时间不够，会报错：MOTOR_ERROR_CONTROL_DEADLINE_MISSED,磁编电机还会报ENCODER_ERROR_ABS_SPI_COM_FAIL
+//#define TIM_1_8_PERIOD_CLOCKS 7000  //qiaoxu modify 12khz
 //#define TIM_1_8_PERIOD_CLOCKS 5250  //qiaoxu modify 16khz
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_APB1_CLOCK_HZ 84000000

@@ -33,6 +33,24 @@
 //#define ENCODER_USE_SPI_ABS_AMS
 #define ENCODER_USE_HALL
 
+//qiaoxu add: 通信外设裁剪开关 (不用的外设注释掉, 对应代码不参与编译, 可减小固件体积)
+//  USE_UART_A : UART4   (GPIO1/GPIO2, ODrive 的 uart0)
+//  USE_UART_B : USART2  (GPIO3/GPIO4, ODrive 的 uart1)
+//  USE_UART_C : 预留, 本板未接
+//  USE_I2C_A  : I2C1    (GPIO13/GPIO14, 与 CAN_R/CAN_D 复用)
+//#define USE_UART_A
+//#define USE_UART_B
+//#define USE_UART_C
+//#define USE_I2C_A
+
+//qiaoxu add: 通信协议裁剪开关
+//  USE_ASCII_PROTOCOL : USB CDC / UART 上的 ASCII 文本协议 ("p 0 1.0"、"r vbus_voltage" 等)
+//                       本机走 CAN + fibre(odrivetool), 不用 ASCII 文本协议, 关闭可省 ~29KB
+//#define USE_ASCII_PROTOCOL
+
+#if defined(USE_UART_A) || defined(USE_UART_B) || defined(USE_UART_C)
+#define USE_UART_ANY
+#endif
 
 #define AXIS_COUNT (2)
 
@@ -52,10 +70,19 @@
 #define DEFAULT_ERROR_PIN 0
 #define DEFAULT_MIN_DC_VOLTAGE 8.0f
 
+//qiaoxu add: 裁剪掉 UART_A 时 GPIO1/GPIO2 不再默认复用为 UART
+#ifdef USE_UART_A
+#define DEFAULT_GPIO_MODE_1 ODriveIntf::GPIO_MODE_UART_A
+#define DEFAULT_GPIO_MODE_2 ODriveIntf::GPIO_MODE_UART_A
+#else
+#define DEFAULT_GPIO_MODE_1 ODriveIntf::GPIO_MODE_DIGITAL
+#define DEFAULT_GPIO_MODE_2 ODriveIntf::GPIO_MODE_DIGITAL
+#endif
+
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
-    ODriveIntf::GPIO_MODE_UART_A, \
-    ODriveIntf::GPIO_MODE_UART_A, \
+    DEFAULT_GPIO_MODE_1, \
+    DEFAULT_GPIO_MODE_2, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \

@@ -47,6 +47,7 @@ void Encoder::setup() {
         .CLKPhase = SPI_PHASE_2EDGE,
         .NSS = SPI_NSS_SOFT,
         .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
+//        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32, //qiaoxu modify V0.5.1
         .FirstBit = SPI_FIRSTBIT_MSB,
         .TIMode = SPI_TIMODE_DISABLE,
         .CRCCalculation = SPI_CRCCALCULATION_DISABLE,

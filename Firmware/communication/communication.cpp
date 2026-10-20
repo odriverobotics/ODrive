@@ -43,11 +43,13 @@ void init_communication(void) {
         odrv.misconfigured_ = true;
     }
 
+#ifdef USE_UART_ANY
     if (odrv.config_.enable_uart_a && uart_a) {
         start_uart_server(uart_a);
     } else if (odrv.config_.enable_uart_b && uart_b) {
         start_uart_server(uart_b);
     }
+#endif
 
     start_usb_server();
 
@@ -71,6 +73,7 @@ int _write(int file, const char* data, int len) __attribute__((used));
 int _write(int file, const char* data, int len) {
     fibre::cbufptr_t buf{(const uint8_t*)data, (const uint8_t*)data + len};
 
+#ifdef USE_UART_ANY
     if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
         odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
         uart0_stdout_sink.write(buf);
@@ -79,6 +82,7 @@ int _write(int file, const char* data, int len) {
             osMessagePut(uart_event_queue, 3, 0);
         }
     }
+#endif
 
     if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
         odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
