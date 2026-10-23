@@ -39,6 +39,8 @@
 
 /* USER CODE BEGIN 0 */
 #include <Drivers/STM32/stm32_system.h>
+//qiaoxu add: 引入 USE_UART_A / USE_UART_B 外设裁剪开关
+#include "board.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -353,6 +355,7 @@ void CAN1_SCE_IRQHandler(void)
   /* USER CODE END CAN1_SCE_IRQn 1 */
 }
 
+#ifdef USE_UART_B
 /**
   * @brief This function handles USART2 global interrupt.
   */
@@ -366,6 +369,7 @@ void USART2_IRQHandler(void)
 
   /* USER CODE END USART2_IRQn 1 */
 }
+#endif /* USE_UART_B */
 
 /**
 * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
@@ -396,6 +400,7 @@ void SPI3_IRQHandler(void)
   /* USER CODE END SPI3_IRQn 1 */
 }
 
+#ifdef USE_UART_A
 /**
 * @brief This function handles UART4 global interrupt.
 */
@@ -409,6 +414,7 @@ void UART4_IRQHandler(void)
 
   /* USER CODE END UART4_IRQn 1 */
 }
+#endif /* USE_UART_A */
 
 /* USER CODE BEGIN 1 */
 

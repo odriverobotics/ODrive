@@ -64,11 +64,17 @@ void ODriveCAN::can_server_thread() {
 
             // wait at least 1ms to prevent busy-spin on failed sends
             osSemaphoreWait(sem_can, std::max(next_service_time, 1UL));
-        } else if (status == HAL_CAN_ERROR_TIMEOUT) {
+        } else {
+            // ★ 原来这里只判 HAL_CAN_ERROR_TIMEOUT，其它任何错误码（ACK 错/位错/格式错/
+            //   error-passive/bus-off 等）都落不到任何分支里 —— 于是这个 for(;;) 既不收也不发
+            //   地空转死循环，而且永远出不来，外部表现就是 "CAN 彻底卡死收不到数据"。
+            //   HAL_CAN_ErrorCallback 是空的（复位那行被注释掉了），错误码一旦置上就没人清，
+            //   所以这里必须无条件复位并重新拉起 CAN，再让出 CPU 避免空转。
             HAL_CAN_ResetError(handle_);
             status = HAL_CAN_Start(handle_);
             if (status == HAL_OK)
-                status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
+                status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
+            osDelay(1);
         }
     }
 }

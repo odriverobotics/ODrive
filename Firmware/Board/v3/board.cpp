@@ -32,8 +32,16 @@ uint8_t __attribute__((section(".testdata"))) fake_otp[FLASH_OTP_END + 1 - FLASH
 Stm32SpiArbiter spi3_arbiter{&hspi3};
 Stm32SpiArbiter& ext_spi_arbiter = spi3_arbiter;
 
+#ifdef USE_UART_A
 UART_HandleTypeDef* uart_a = &huart4;
+#else
+UART_HandleTypeDef* uart_a = nullptr;
+#endif
+#ifdef USE_UART_B
 UART_HandleTypeDef* uart_b = &huart2; // TODO: this could be supported in ODrive v3.6 (or similar) using STM32's USART2
+#else
+UART_HandleTypeDef* uart_b = nullptr;
+#endif
 UART_HandleTypeDef* uart_c = nullptr;
 
 Drv8301 m0_gate_driver{
@@ -327,16 +335,21 @@ bool board_init() {
     HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 
+#ifdef USE_UART_A
     if (odrv.config_.enable_uart_a) {
         uart_a->Init.BaudRate = odrv.config_.uart_a_baudrate;
         MX_UART4_Init();
     }
+#endif
 
+#ifdef USE_UART_B
     if (odrv.config_.enable_uart_b) {
         uart_b->Init.BaudRate = odrv.config_.uart_b_baudrate;
         MX_USART2_UART_Init();
     }
+#endif
 
+#ifdef USE_I2C_A
     if (odrv.config_.enable_i2c_a) {
         // Set up the direction GPIO as input
         get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
@@ -350,6 +363,7 @@ bool board_init() {
         i2c_stats_.addr |= get_gpio(5).read() ? 0x4 : 0;
         MX_I2C1_Init(i2c_stats_.addr);
     }
+#endif
 
     if (odrv.config_.enable_can_a) {
         // The CAN initialization will (and must) init its own GPIOs before the
@@ -574,6 +588,7 @@ void ControlLoop_IRQHandler(void) {
     TaskTimer::enabled = false;
 }
 
+#ifdef USE_I2C_A
 void I2C1_EV_IRQHandler(void) {
     COUNT_IRQ(I2C1_EV_IRQn);
     HAL_I2C_EV_IRQHandler(&hi2c1);
@@ -583,6 +598,7 @@ void I2C1_ER_IRQHandler(void) {
     COUNT_IRQ(I2C1_ER_IRQn);
     HAL_I2C_ER_IRQHandler(&hi2c1);
 }
+#endif
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS; // defined in usbd_conf.c
 void OTG_FS_IRQHandler(void) {

@@ -824,7 +824,9 @@ typedef struct
 /** @addtogroup Peripheral_memory_map
   * @{
   */
-#define FLASH_BASE            0x08000000U /*!< FLASH(up to 1 MB) base address in the alias region                         */
+//qiaoxu modify
+//#define FLASH_BASE            0x08000000U /*!< FLASH(up to 1 MB) base address in the alias region                         */
+#define FLASH_BASE            0x0800C000U // APP start address 
 #define CCMDATARAM_BASE       0x10000000U /*!< CCM(core coupled memory) data RAM(64 KB) base address in the alias region  */
 #define SRAM1_BASE            0x20000000U /*!< SRAM1(112 KB) base address in the alias region                              */
 #define SRAM2_BASE            0x2001C000U /*!< SRAM2(16 KB) base address in the alias region                              */

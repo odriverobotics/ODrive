@@ -22,16 +22,16 @@ public:
     };
 
     struct Config_t {
-        ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
-        InputMode input_mode = INPUT_MODE_PASSTHROUGH;             //see: InputMode_t
+        ControlMode control_mode = CONTROL_MODE_VELOCITY_CONTROL;  //see: ControlMode_t
+        InputMode input_mode = INPUT_MODE_VEL_RAMP;             //see: InputMode_t
         float pos_gain = 20.0f;                  // [(turn/s) / turn]
-        float vel_gain = 1.0f / 6.0f;            // [Nm/(turn/s)]
+        float vel_gain = 0.05f;            // [Nm/(turn/s)]
         // float vel_gain = 0.2f / 200.0f,       // [Nm/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 2.0f / 6.0f; // [Nm/(turn/s * s)]
-        float vel_limit = 2.0f;                  // [turn/s] Infinity to disable.
+        float vel_integrator_gain = 0.04f;//2.0f / 6.0f; // [Nm/(turn/s * s)]
+        float vel_limit = 200.0f;                  // [turn/s] Infinity to disable.
         float vel_limit_tolerance = 1.2f;        // ratio to vel_lim. Infinity to disable.
         float vel_integrator_limit = INFINITY;   // Vel. integrator clamping value. Infinity to disable.
-        float vel_ramp_rate = 1.0f;              // [(turn/s) / s]
+        float vel_ramp_rate = 20.0f;              // [(turn/s) / s]
         float torque_ramp_rate = 0.01f;          // Nm / sec
         bool circular_setpoints = false;
         float circular_setpoint_range = 1.0f;    // Circular range when circular_setpoints is true. [turn]
@@ -51,8 +51,8 @@ public:
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration(). Set to -1 to select sensorless estimator.
         float mechanical_power_bandwidth = 20.0f; // [rad/s] filter cutoff for mechanical power for spinout detction
         float electrical_power_bandwidth = 20.0f; // [rad/s] filter cutoff for electrical power for spinout detection
-        float spinout_electrical_power_threshold = 10.0f; // [W] electrical power threshold for spinout detection
-        float spinout_mechanical_power_threshold = -10.0f; // [W] mechanical power threshold for spinout detection
+        float spinout_electrical_power_threshold = 1e9;//10.0f; //qiaoxu modify 如果不改小的话当速度环PID不合适抖动时易报错controller.cpp:422-440：ERROR_SPINOUT_DETECTED，ERROR_UNKNOWN_TORQUE // [W] electrical power threshold for spinout detection
+        float spinout_mechanical_power_threshold = -1e9;//-10.0f; //qiaoxu modify 同上 [W] mechanical power threshold for spinout detection
 
         // custom setters
         Controller* parent;

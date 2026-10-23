@@ -254,6 +254,68 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 }
 
 
+/**
+ * @brief 把转子锁定在电角度 0（开环直流对齐 / DC injection）。
+ *
+ * 与 run_lockin_spin() 的区别：
+ *  - 不要求 motor_.is_calibrated_，也不要求 encoder_.config_.direction 已知；
+ *  - phase_ 恒为 0、phase_vel_ 恒为 0，即定子磁场矢量固定在电角度 0，转子被拉到电角度 0；
+ *  - 只有收到新的 requested_state_（如 IDLE / CLOSED_LOOP_CONTROL）才会退出。
+ *
+ * 已校准（相电阻、相电感有效）时走电流环：Id = phase_lock_current，Iq = 0；
+ * 未校准时 PI 增益为 0/NaN，电流环不可用，改走电压模式：Vd = phase_lock_voltage，Vq = 0，
+ * 由 motor.config.current_lim 触发 CURRENT_LIMIT_VIOLATION 做保护。
+ */
+bool Axis::run_phase_lock_zero() {
+    const bool use_current_mode = motor_.is_calibrated_
+                               && (motor_.config_.phase_inductance > 0.0f)
+                               && (motor_.config_.phase_resistance > 0.0f);
+
+    const float magnitude = use_current_mode ? config_.phase_lock_current
+                                            : config_.phase_lock_voltage;
+    const float ramp_time = config_.phase_lock_ramp_time > 0.01f ? config_.phase_lock_ramp_time : 0.01f;
+
+    CRITICAL_SECTION() {
+        // Reset state variables
+        open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
+        open_loop_controller_.Vdq_setpoint_ = {0.0f, 0.0f};
+        open_loop_controller_.phase_ = 0.0f;            // ★ 电角度锁定在 0
+        open_loop_controller_.initial_phase_ = 0.0f;
+        open_loop_controller_.phase_vel_ = 0.0f;        // ★ 相位不再走动
+
+        open_loop_controller_.max_current_ramp_ = use_current_mode ? magnitude / ramp_time : INFINITY;
+        open_loop_controller_.max_voltage_ramp_ = use_current_mode ? INFINITY : magnitude / ramp_time;
+        open_loop_controller_.max_phase_vel_ramp_ = INFINITY;
+        open_loop_controller_.target_current_ = use_current_mode ? magnitude : 0.0f;
+        open_loop_controller_.target_voltage_ = use_current_mode ? 0.0f : magnitude;
+        open_loop_controller_.target_vel_ = 0.0f;
+        open_loop_controller_.total_distance_ = 0.0f;
+
+        motor_.current_control_.enable_current_control_src_ = use_current_mode;
+        motor_.current_control_.Idq_setpoint_src_.connect_to(&open_loop_controller_.Idq_setpoint_);
+        motor_.current_control_.Vdq_setpoint_src_.connect_to(&open_loop_controller_.Vdq_setpoint_);
+
+        motor_.current_control_.phase_src_.connect_to(&open_loop_controller_.phase_);
+        acim_estimator_.rotor_phase_src_.connect_to(&open_loop_controller_.phase_);
+
+        motor_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        motor_.current_control_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        acim_estimator_.rotor_phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+    }
+    wait_for_control_iteration();
+
+    motor_.arm(&motor_.current_control_);
+
+    // 一直保持锁定，直到上位机改写 requested_state_（CAN 0x277 / byte0 = 0x22 → IDLE）
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
+        osDelay(1);
+    }
+
+    motor_.disarm();
+
+    return true;
+}
+
 bool Axis::start_closed_loop_control() {
     bool sensorless_mode = config_.enable_sensorless_mode;
 
@@ -541,6 +603,11 @@ void Axis::run_state_machine_loop() {
                 }
 
                 status = encoder_.run_hall_phase_calibration();
+            } break;
+
+            case AXIS_STATE_PHASE_LOCK_ZERO: {
+                // 电角度 0 锁定：不检查 motor_.is_calibrated_ / encoder_.config_.direction
+                status = run_phase_lock_zero();
             } break;
 
             case AXIS_STATE_HOMING: {

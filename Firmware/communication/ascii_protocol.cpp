@@ -16,6 +16,9 @@
 #include "autogen/type_info.hpp"
 #include "communication/interface_can.hpp"
 
+//qiaoxu add: 不用 ASCII 文本协议时, 整个文件不参与编译
+#ifdef USE_ASCII_PROTOCOL
+
 using namespace fibre;
 
 /* Private macros ------------------------------------------------------------*/
@@ -452,3 +455,5 @@ void AsciiProtocol::start() {
     TransferHandle dummy;
     rx_channel_->start_read(rx_buf_, &dummy, MEMBER_CB(this, on_read_finished));
 }
+
+#endif // USE_ASCII_PROTOCOL

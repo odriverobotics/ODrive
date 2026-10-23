@@ -47,6 +47,7 @@ void Encoder::setup() {
         .CLKPhase = SPI_PHASE_2EDGE,
         .NSS = SPI_NSS_SOFT,
         .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
+//        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32, //qiaoxu modify V0.5.1
         .FirstBit = SPI_FIRSTBIT_MSB,
         .TIMode = SPI_TIMODE_DISABLE,
         .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
@@ -529,13 +530,28 @@ bool Encoder::abs_spi_start_transaction() {
     if (mode_ & MODE_FLAG_ABS){
         if (Stm32SpiArbiter::acquire_task(&spi_task_)) {
             spi_task_.ncs_gpio = abs_spi_cs_gpio_;
-            spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
-            spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
-            spi_task_.length = 1;
+            spi_task_.length = 1; // AS5047P 逐帧流水线：所有事务都只有一帧
             spi_task_.on_complete = [](void* ctx, bool success) { ((Encoder*)ctx)->abs_spi_cb(success); };
             spi_task_.on_complete_ctx = this;
             spi_task_.next = nullptr;
-            
+
+            // ★ 零位标定 / OTP 烧写期间改写本周期要发的那一帧。注意：仍然是同一个
+            // spi_task_、同一笔事务，仲裁器链表长度完全不变 —— 这一点是关键。若从线程
+            // 额外插入阻塞事务，一旦某次 start() 失败该任务就会永久卡在表头，链表再也
+            // 不推进，周期读连续 51ms 收不到样本 → ENCODER_ERROR_ABS_SPI_COM_FAIL。
+            bool hijack = false;
+            if (mode_ == MODE_SPI_ABS_AMS) {
+                hijack = (as5047_otp_step_ != AS5047_OTP_OFF) ? as5047_otp_prepare()
+                                                             : as5047_seq_prepare();
+            }
+            if (hijack) {
+                spi_task_.tx_buf = (uint8_t*)&as5047_seq_tx_;
+                spi_task_.rx_buf = (uint8_t*)&as5047_seq_rx_;
+            } else {
+                spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+                spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
+            }
+
             spi_arbiter_->transfer_async(&spi_task_);
         } else {
             return false;
@@ -559,10 +575,461 @@ uint8_t cui_parity(uint16_t v) {
     return ~v & 3;
 }
 
+///////////////////////////////////////////////////////////////////////////
+//  AS5047P 零位标定 —— 见 磁编AS5047P-ATSM.pdf
+//
+//  命令帧 (Figure 13)：bit15 = PARC(bit14:0 偶校验)，bit14 = R/W(0 写 / 1 读)，bit13:0 = 地址
+//  读数据帧 (Figure 14)：bit15 = PARD(偶校验)，bit14 = EF(帧错误)，bit13:0 = 数据
+//  写数据帧 (Figure 16)：bit15 = PARD(偶校验)，bit14 = 恒 0，bit13:0 = 数据
+//
+//  ★ 关键：AS5047P 是"逐帧流水线"协议，命令帧和数据帧各占一个 CS 低电平周期，而不是拼在
+//    同一个 CS 段里发。手册原话：
+//        "The SPI read is sampled on the rising edge of CSn and the data is transmitted
+//         on MISO with the next read command."
+//    本工程的周期读就是这么工作的（本周期发命令、下周期收数据），所以这里复用同样的
+//    机制即可 —— 每个采样周期只发一帧，全部事务的 length 都是 1。
+///////////////////////////////////////////////////////////////////////////
+static uint16_t as5047_build_frame(uint16_t payload14, bool is_read) {
+    uint16_t frame = payload14 & 0x3fffu;
+    if (is_read) {
+        frame |= (1u << 14);
+    }
+    // ams_parity() 返回 16bit 整体的偶校验；此时 bit15 = 0，等价于对 bit14:0 取偶校验
+    return frame | ((uint16_t)ams_parity(frame) << 15);
+}
+
+// 按当前步骤填好本周期要发的帧；返回 false 表示无任务，走正常的周期读（0xFFFF）
+bool Encoder::as5047_seq_prepare() {
+    switch (as5047_step_) {
+        // --- 可选：写 ZPOSM / ZPOSL = as5047_zpos_target_ ---
+        case AS5047_WR_M_CMD: as5047_seq_tx_ = as5047_build_frame(0x0016u, false); return true;
+        case AS5047_WR_M_DAT: as5047_seq_tx_ = as5047_build_frame((uint16_t)((as5047_zpos_target_ >> 6) & 0x00ffu), false); return true;
+        case AS5047_WR_L_CMD: as5047_seq_tx_ = as5047_build_frame(0x0017u, false); return true;
+        case AS5047_WR_L_DAT: as5047_seq_tx_ = as5047_build_frame((uint16_t)(as5047_zpos_target_ & 0x003fu), false); return true;
+
+        // --- 读回 ZPOSM / ZPOSL / 计数 ---
+        case AS5047_RD_ZM_CMD: as5047_seq_tx_ = as5047_build_frame(0x0016u, true); return true;
+        case AS5047_RD_ZL_CMD: as5047_seq_tx_ = as5047_build_frame(0x0017u, true); return true;
+        case AS5047_RD_CMD:    as5047_seq_tx_ = as5047_build_frame(0x3fffu, true); return true; // ANGLECOM
+
+        // --- 读磁场强度 / 诊断信息 ---
+        case AS5047_RD_MAG_CMD:  as5047_seq_tx_ = as5047_build_frame(0x3ffdu, true); return true; // MAG
+        case AS5047_RD_DIAG_CMD: as5047_seq_tx_ = as5047_build_frame(0x3ffcu, true); return true; // DIAAGC
+
+        case AS5047_RD_ZM_DAT:
+        case AS5047_RD_ZL_DAT:
+        case AS5047_RD_DAT:
+        case AS5047_RD_MAG_DAT:
+        case AS5047_RD_DIAG_DAT: as5047_seq_tx_ = as5047_build_frame(0x0000u, true); return true; // NOP
+
+        default:
+            return false; // AS5047_IDLE / AS5047_DONE
+    }
+}
+
+// 标定帧不是角度，所以这里不设置 abs_spi_pos_updated_（update() 里会继续用上一笔 pos_abs_，
+// 只跳过十几个采样周期，对 spi_error_rate_ 的贡献远低于 0.05 阈值）
+void Encoder::as5047_seq_advance() {
+    const uint16_t rx = as5047_seq_rx_;
+    const bool rx_ok = !ams_parity(rx) && !(rx & (1u << 14)); // 偶校验正确且 EF 未置位
+
+    switch (as5047_step_) {
+        case AS5047_WR_M_CMD: as5047_step_ = AS5047_WR_M_DAT; break;
+        case AS5047_WR_M_DAT: as5047_step_ = AS5047_WR_L_CMD; break;
+        case AS5047_WR_L_CMD: as5047_step_ = AS5047_WR_L_DAT; break;
+        case AS5047_WR_L_DAT: as5047_step_ = AS5047_RD_ZM_CMD; break;
+
+        case AS5047_RD_ZM_CMD: as5047_step_ = AS5047_RD_ZM_DAT; break;
+        case AS5047_RD_ZM_DAT:
+            if (rx_ok) as5047_zposm_rb_ = rx & 0x3fffu;
+            as5047_step_ = AS5047_RD_ZL_CMD;
+            break;
+        case AS5047_RD_ZL_CMD: as5047_step_ = AS5047_RD_ZL_DAT; break;
+        case AS5047_RD_ZL_DAT:
+            if (rx_ok) as5047_zposl_rb_ = rx & 0x3fffu;
+            as5047_step_ = AS5047_RD_CMD;
+            break;
+
+        case AS5047_RD_CMD:   as5047_step_ = AS5047_RD_DAT; break; // 本帧是上一次访问的输出，丢弃
+        case AS5047_RD_DAT:
+            if (rx_ok) as5047_rd_count_ = rx & 0x3fffu;
+            as5047_step_ = AS5047_DONE;
+            break;
+
+        // --- 读 MAG → 读 DIAAGC（入口由 as5047_read_diagnostics() 设为 RD_MAG_CMD）---
+        case AS5047_RD_MAG_CMD:  as5047_step_ = AS5047_RD_MAG_DAT; break;
+        case AS5047_RD_MAG_DAT:
+            if (rx_ok) as5047_mag_ = rx & 0x3fffu;
+            as5047_step_ = AS5047_RD_DIAG_CMD;
+            break;
+        case AS5047_RD_DIAG_CMD: as5047_step_ = AS5047_RD_DIAG_DAT; break;
+        case AS5047_RD_DIAG_DAT:
+            if (rx_ok) as5047_diag_ = rx & 0x3fffu;
+            as5047_step_ = AS5047_DONE;
+            break;
+
+        default: break;
+    }
+}
+
+// 等待轴静止。零位是一个位置量，而且序列里前后两次采样相隔若干采样周期，轴一转就会在
+// 两次采样之间引入额外偏差，让结果无法判读 —— 所以标定前必须先确认轴没在动。
+bool Encoder::as5047_wait_still(uint32_t timeout_ms, uint32_t tol_counts) {
+    constexpr int32_t CPR = 16384; // AS5047P 14bit
+    int32_t prev = pos_abs_;
+    uint32_t waited = 0;
+
+    while (waited < timeout_ms) {
+        osDelay(2);
+        waited += 2;
+        int32_t cur = pos_abs_;
+        int32_t d = cur - prev;
+        if (d >  CPR / 2) d -= CPR;  // 处理 0/16383 回绕
+        if (d < -CPR / 2) d += CPR;
+        if (d < 0) d = -d;
+        if ((uint32_t)d <= tol_counts) {
+            return true;
+        }
+        prev = cur;
+    }
+    return false;
+}
+
+// 读回 ZPOSM/ZPOSL 和计数，不动硬件任何状态。上电后第一次调用读到的 ZPOS 就是 OTP 内容。
+bool Encoder::as5047_read_zero_and_count(uint16_t* zpos, uint16_t* count, uint32_t timeout_ms) {
+    if (mode_ != MODE_SPI_ABS_AMS) {
+        return false;
+    }
+
+    as5047_rd_count_ = 0xffffu;
+    as5047_zposm_rb_ = 0xffffu;
+    as5047_zposl_rb_ = 0xffffu;
+    as5047_step_ = AS5047_RD_ZM_CMD;
+
+    uint32_t waited = 0;
+    while (as5047_step_ != AS5047_DONE) {
+        osDelay(1);
+        if (++waited >= timeout_ms) {
+            as5047_step_ = AS5047_IDLE;
+            return false;
+        }
+    }
+    as5047_step_ = AS5047_IDLE;
+
+    // ZPOSM 是 8bit、ZPOSL 是 6bit，读回 0xFFFF 只可能是没读到
+    if (as5047_zposm_rb_ == 0xffffu || as5047_zposl_rb_ == 0xffffu || as5047_rd_count_ == 0xffffu) {
+        return false;
+    }
+
+    if (zpos)  *zpos  = (uint16_t)(((as5047_zposm_rb_ & 0x00ffu) << 6) | (as5047_zposl_rb_ & 0x003fu));
+    if (count) *count = as5047_rd_count_;
+    return true;
+}
+
+// 软写 ZPOSM/ZPOSL = zpos，然后读回 ZPOSM 和计数。
+// 只轮询状态机，**不做任何阻塞式 SPI**，因此无论底层发生什么都能在 timeout_ms 内返回。
+bool Encoder::as5047_write_zpos(uint16_t zpos, uint16_t* count, uint16_t* zposm_rb,
+                                uint32_t timeout_ms) {
+    if (mode_ != MODE_SPI_ABS_AMS) {
+        return false;
+    }
+
+    as5047_zpos_target_ = (uint16_t)(zpos & 0x3fffu);
+    as5047_rd_count_ = 0xffffu;
+    as5047_zposm_rb_ = 0xffffu;
+    as5047_zposl_rb_ = 0xffffu;
+    as5047_step_ = AS5047_WR_M_CMD;
+
+    uint32_t waited = 0;
+    while (as5047_step_ != AS5047_DONE) {
+        osDelay(1);
+        if (++waited >= timeout_ms) {
+            as5047_step_ = AS5047_IDLE;
+            return false;
+        }
+    }
+    as5047_step_ = AS5047_IDLE;
+
+    if (count)    *count    = as5047_rd_count_;
+    if (zposm_rb) *zposm_rb = as5047_zposm_rb_;
+    return true;
+}
+
+// 读磁场强度 MAG(0x3FFD) 和诊断信息 DIAAGC(0x3FFC)。纯读，无副作用。
+bool Encoder::as5047_read_diagnostics(uint16_t* magnitude, uint16_t* diaagc, uint32_t timeout_ms) {
+    if (mode_ != MODE_SPI_ABS_AMS) {
+        return false;
+    }
+
+    as5047_mag_ = 0xffffu;
+    as5047_diag_ = 0xffffu;
+    as5047_step_ = AS5047_RD_MAG_CMD;
+
+    uint32_t waited = 0;
+    while (as5047_step_ != AS5047_DONE) {
+        osDelay(1);
+        if (++waited >= timeout_ms) {
+            as5047_step_ = AS5047_IDLE;
+            return false;
+        }
+    }
+    as5047_step_ = AS5047_IDLE;
+
+    // MAG 是 14bit，读回 0xFFFF 只可能是没读到
+    if (as5047_mag_ == 0xffffu || as5047_diag_ == 0xffffu) {
+        return false;
+    }
+
+    if (magnitude) *magnitude = as5047_mag_;
+    if (diaagc)    *diaagc    = as5047_diag_;
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  AS5047P OTP 烧写（不可逆，只能烧一次）
+//  严格按手册第 27-28 页的 19 步流程（Figure 35-38）展开；本段负责 step 2~15，
+//  step 1/16 的"Power ON cycle"与最终 step 17~19 的复验必须由人工断电上电完成。
+//  电气前提：烧写期间 VDD 必须 3.3~3.5V（5V 模式 4.5~5.5V），瞬时电流可达 100mA，
+//  温度 25±20℃，且手册明确写了"A reprogramming is not allowed"。
+///////////////////////////////////////////////////////////////////////////
+
+// PROG 轮询上限：每次轮询占 2 个采样周期，4000 次约 1s
+static constexpr uint32_t AS5047_OTP_POLL_LIMIT = 4000;
+
+// 待写入 0x0016+idx 的值（idx 顺序与寄存器地址顺序一致，方便与读回值直接比对）
+uint16_t Encoder::as5047_otp_write_value(uint8_t idx) const {
+    return (idx < 4) ? as5047_otp_expected_[idx] : 0u;
+}
+
+bool Encoder::as5047_otp_prepare() {
+    switch (as5047_otp_step_) {
+        // 读 0x0016+idx（预检用 idx 0/1 读 ZPOSM/ZPOSL；step1/step2 用 idx 0..3）
+        case AS5047_OTP_PRE_CMD:
+        case AS5047_OTP_RD1_CMD:
+        case AS5047_OTP_RD2_CMD:
+            as5047_seq_tx_ = as5047_build_frame((uint16_t)(0x0016u + as5047_otp_idx_), true);
+            return true;
+        case AS5047_OTP_PRE_DAT:
+        case AS5047_OTP_RD1_DAT:
+        case AS5047_OTP_RD2_DAT:
+            as5047_seq_tx_ = as5047_build_frame(0x0000u, true);
+            return true;
+
+        // 写 0x0016+idx
+        case AS5047_OTP_WR_CMD:
+        case AS5047_OTP_CLR_CMD:
+            as5047_seq_tx_ = as5047_build_frame((uint16_t)(0x0016u + as5047_otp_idx_), false);
+            return true;
+        case AS5047_OTP_WR_DAT:
+            as5047_seq_tx_ = as5047_build_frame(as5047_otp_write_value(as5047_otp_idx_), false);
+            return true;
+        case AS5047_OTP_CLR_DAT: // step 11：把整个非易失内容写 0
+            as5047_seq_tx_ = as5047_build_frame(0x0000u, false);
+            return true;
+
+        // 写 PROG 寄存器
+        case AS5047_OTP_PROGEN_CMD:
+        case AS5047_OTP_BURN_CMD:
+        case AS5047_OTP_PROGVER_CMD:
+        case AS5047_OTP_OTPREF_CMD:
+            as5047_seq_tx_ = as5047_build_frame(0x0003u, false);
+            return true;
+        case AS5047_OTP_PROGEN_DAT:  as5047_seq_tx_ = as5047_build_frame(0x0001u, false); return true; // PROGEN
+        case AS5047_OTP_BURN_DAT:    as5047_seq_tx_ = as5047_build_frame(0x0008u, false); return true; // PROGOTP
+        case AS5047_OTP_PROGVER_DAT: as5047_seq_tx_ = as5047_build_frame(0x0040u, false); return true; // PROGVER
+        case AS5047_OTP_OTPREF_DAT:  as5047_seq_tx_ = as5047_build_frame(0x0004u, false); return true; // OTPREF
+
+        // 轮询 PROG
+        case AS5047_OTP_POLL_CMD: as5047_seq_tx_ = as5047_build_frame(0x0003u, true); return true;
+        case AS5047_OTP_POLL_DAT: as5047_seq_tx_ = as5047_build_frame(0x0000u, true); return true;
+
+        default:
+            return false;
+    }
+}
+
+// 比对 rd[0..3] = ZPOSM/ZPOSL/SETTINGS1/SETTINGS2 与期望值。
+// SETTINGS1 的 bit0 是出厂预编程位，读回恒为 1，比对时必须屏蔽（手册 step 7/15/18 强制要求）
+bool Encoder::as5047_otp_verify(const uint16_t* rd) const {
+    if ((rd[0] & 0x00ffu) != as5047_otp_expected_[0]) return false;
+    if ((rd[1] & 0x003fu) != as5047_otp_expected_[1]) return false;
+    if ((rd[2] & 0xfffeu) != (as5047_otp_expected_[2] & 0xfffeu)) return false;
+    if ((rd[3] & 0x3fffu) != as5047_otp_expected_[3]) return false;
+    return true;
+}
+
+void Encoder::as5047_otp_advance() {
+    const uint16_t rx = as5047_seq_rx_;
+    const bool rx_ok = !ams_parity(rx) && !(rx & (1u << 14));
+
+    switch (as5047_otp_step_) {
+        // ---- 预检：ZPOSM/ZPOSL 都应读回 0。非 0 说明 OTP 已经烧过了 ----
+        case AS5047_OTP_PRE_CMD: as5047_otp_step_ = AS5047_OTP_PRE_DAT; break;
+        case AS5047_OTP_PRE_DAT:
+            if (!rx_ok || (rx & 0x3fffu) != 0u) {
+                as5047_otp_fail_ = 5;
+                as5047_otp_step_ = AS5047_OTP_FAILED;
+            } else if (++as5047_otp_idx_ < 2) {
+                as5047_otp_step_ = AS5047_OTP_PRE_CMD;
+            } else {
+                as5047_otp_idx_ = 0;
+                as5047_otp_step_ = AS5047_OTP_WR_CMD;
+            }
+            break;
+
+        // ---- step 2/5：写 SETTINGS1/2 和 ZPOSM/ZPOSL ----
+        case AS5047_OTP_WR_CMD: as5047_otp_step_ = AS5047_OTP_WR_DAT; break;
+        case AS5047_OTP_WR_DAT:
+            if (++as5047_otp_idx_ < 4) {
+                as5047_otp_step_ = AS5047_OTP_WR_CMD;
+            } else {
+                as5047_otp_idx_ = 0;
+                as5047_otp_step_ = AS5047_OTP_RD1_CMD;
+            }
+            break;
+
+        // ---- step 6/7：读回 step1 并比对，不对就绝不往下烧 ----
+        case AS5047_OTP_RD1_CMD: as5047_otp_step_ = AS5047_OTP_RD1_DAT; break;
+        case AS5047_OTP_RD1_DAT:
+            if (rx_ok) as5047_otp_rd1_[as5047_otp_idx_] = rx & 0x3fffu;
+            if (++as5047_otp_idx_ < 4) {
+                as5047_otp_step_ = AS5047_OTP_RD1_CMD;
+            } else if (as5047_otp_verify(as5047_otp_rd1_)) {
+                as5047_otp_step_ = AS5047_OTP_PROGEN_CMD;
+            } else {
+                as5047_otp_fail_ = 2;
+                as5047_otp_step_ = AS5047_OTP_FAILED;
+            }
+            break;
+
+        // ---- step 8/9：PROGEN=1 后过 2 帧（250us）再 PROGOTP=1，满足手册">=100us" ----
+        case AS5047_OTP_PROGEN_CMD: as5047_otp_step_ = AS5047_OTP_PROGEN_DAT; break;
+        case AS5047_OTP_PROGEN_DAT: as5047_otp_step_ = AS5047_OTP_BURN_CMD; break;
+        case AS5047_OTP_BURN_CMD:   as5047_otp_step_ = AS5047_OTP_BURN_DAT; break;
+        case AS5047_OTP_BURN_DAT:
+            as5047_otp_polls_ = 0;
+            as5047_otp_step_ = AS5047_OTP_POLL_CMD;
+            break;
+
+        // ---- step 10：轮询 PROG 直到读回 0x0001 ----
+        case AS5047_OTP_POLL_CMD: as5047_otp_step_ = AS5047_OTP_POLL_DAT; break;
+        case AS5047_OTP_POLL_DAT:
+            if (rx_ok && (rx & 0x3fffu) == 0x0001u) {
+                as5047_otp_idx_ = 0;
+                as5047_otp_step_ = AS5047_OTP_CLR_CMD;
+            } else if (++as5047_otp_polls_ > AS5047_OTP_POLL_LIMIT) {
+                as5047_otp_fail_ = 3;
+                as5047_otp_step_ = AS5047_OTP_FAILED;
+            } else {
+                as5047_otp_step_ = AS5047_OTP_POLL_CMD;
+            }
+            break;
+
+        // ---- step 11：把非易失内容全部写 0（这样 step 13 刷新后读到的才是真 OTP 内容）----
+        case AS5047_OTP_CLR_CMD: as5047_otp_step_ = AS5047_OTP_CLR_DAT; break;
+        case AS5047_OTP_CLR_DAT:
+            if (++as5047_otp_idx_ < 4) {
+                as5047_otp_step_ = AS5047_OTP_CLR_CMD;
+            } else {
+                as5047_otp_step_ = AS5047_OTP_PROGVER_CMD;
+            }
+            break;
+
+        // ---- step 12/13：PROGVER=1（guard band）→ OTPREF=1（用 OTP 刷新易失内容）----
+        case AS5047_OTP_PROGVER_CMD: as5047_otp_step_ = AS5047_OTP_PROGVER_DAT; break;
+        case AS5047_OTP_PROGVER_DAT: as5047_otp_step_ = AS5047_OTP_OTPREF_CMD; break;
+        case AS5047_OTP_OTPREF_CMD:  as5047_otp_step_ = AS5047_OTP_OTPREF_DAT; break;
+        case AS5047_OTP_OTPREF_DAT:
+            as5047_otp_idx_ = 0;
+            as5047_otp_step_ = AS5047_OTP_RD2_CMD;
+            break;
+
+        // ---- step 14/15：读回 step2 并比对，这才是"烧进去了"的真凭据 ----
+        case AS5047_OTP_RD2_CMD: as5047_otp_step_ = AS5047_OTP_RD2_DAT; break;
+        case AS5047_OTP_RD2_DAT:
+            if (rx_ok) as5047_otp_rd2_[as5047_otp_idx_] = rx & 0x3fffu;
+            if (++as5047_otp_idx_ < 4) {
+                as5047_otp_step_ = AS5047_OTP_RD2_CMD;
+            } else if (as5047_otp_verify(as5047_otp_rd2_)) {
+                as5047_otp_step_ = AS5047_OTP_DONE;
+            } else {
+                as5047_otp_fail_ = 4;
+                as5047_otp_step_ = AS5047_OTP_FAILED;
+            }
+            break;
+
+        default: break;
+    }
+}
+
+// 发起 OTP 烧写。立刻返回，不代表任何步骤已完成 —— 结果用 as5047_burn_otp_poll() 查。
+bool Encoder::as5047_burn_otp_start(uint16_t zpos, uint32_t timeout_ms) {
+    if (mode_ != MODE_SPI_ABS_AMS || as5047_otp_step_ != AS5047_OTP_OFF) {
+        return false;
+    }
+
+    // 期望烧进 OTP 的内容，顺序与 0x0016..0x0019 一致
+    as5047_otp_expected_[0] = (uint16_t)((zpos >> 6) & 0x00ffu); // ZPOSM
+    as5047_otp_expected_[1] = (uint16_t)(zpos & 0x003fu);        // ZPOSL
+    as5047_otp_expected_[2] = 0x0000u; // SETTINGS1：bit0 出厂位必须清 0，其余保持默认(ABZ/UVW 未使用)
+    as5047_otp_expected_[3] = 0x0000u; // SETTINGS2
+
+    for (uint8_t i = 0; i < 4; ++i) {
+        as5047_otp_rd1_[i] = 0;
+        as5047_otp_rd2_[i] = 0;
+    }
+    as5047_otp_fail_ = 0;
+    as5047_otp_idx_ = 0;
+    as5047_otp_polls_ = 0;
+    as5047_step_ = AS5047_IDLE; // 确保没有残留的半截序列会和 OTP 序列抢帧
+    // 整条序列期间周期读被占用，abs_spi_pos_updated_ 不置位，把 COM_FAIL 计数清零避免误报
+    spi_error_rate_ = 0.0f;
+    as5047_otp_deadline_ = HAL_GetTick() + timeout_ms;
+    as5047_otp_step_ = AS5047_OTP_PRE_CMD;
+    return true;
+}
+
+bool Encoder::as5047_burn_otp_poll(uint16_t* out_zpos, uint8_t* fail_code) {
+    if (as5047_otp_step_ != AS5047_OTP_DONE && as5047_otp_step_ != AS5047_OTP_FAILED) {
+        // 还没跑完。序列本身靠采样中断推进，这里只做墙上时钟超时保护
+        if ((int32_t)(HAL_GetTick() - as5047_otp_deadline_) < 0) {
+            return false;
+        }
+        as5047_otp_step_ = AS5047_OTP_OFF;
+        if (fail_code) *fail_code = 1;
+        if (out_zpos) *out_zpos = 0xffffu;
+        return true;
+    }
+
+    const bool ok = (as5047_otp_step_ == AS5047_OTP_DONE);
+    as5047_otp_step_ = AS5047_OTP_OFF;
+    if (fail_code) *fail_code = ok ? 0u : as5047_otp_fail_;
+    if (out_zpos) {
+        // 从 step2 读回值重建实际烧进去的零位
+        *out_zpos = ok ? (uint16_t)(((as5047_otp_rd2_[0] & 0x00ffu) << 6) | (as5047_otp_rd2_[1] & 0x003fu))
+                       : 0xffffu;
+    }
+    return true;
+}
+
 void Encoder::abs_spi_cb(bool success) {
     uint16_t pos;
 
     if (!success) {
+        goto done;
+    }
+
+    // OTP 烧写序列期间周期读被整段占用，位置本来就不更新；每周期把 COM_FAIL 计数器压住，
+    // 免得长序列把 spi_error_rate_ 推过 0.05 阈值误报 ENCODER_ERROR_ABS_SPI_COM_FAIL
+    if (as5047_otp_step_ != AS5047_OTP_OFF) {
+        spi_error_rate_ = 0.0f;
+        as5047_otp_advance();
+        goto done;
+    }
+
+    // AS5047P 零位标定期间收回来的帧不是角度，交给序列机处理，不当作位置数据
+    if (as5047_step_ != AS5047_IDLE) {
+        as5047_seq_advance();
         goto done;
     }
 

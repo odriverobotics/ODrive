@@ -107,7 +107,8 @@ LoopFillZerobss:
 
 /* Call the clock system intitialization function.*/
   bl  SystemInit   
-  bl  early_start_checks
+  /* qiaoxu delete */ 
+/*   bl  early_start_checks  qiaoxu*/
 
 /* Call static constructors */
     bl __libc_init_array

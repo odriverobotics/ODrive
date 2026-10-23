@@ -80,8 +80,8 @@ struct BoardConfig_t {
     float max_regen_current = 0.0f;
     float brake_resistance = DEFAULT_BRAKE_RESISTANCE;
     bool enable_brake_resistor = false;
-    float dc_bus_undervoltage_trip_level = DEFAULT_MIN_DC_VOLTAGE;      //<! [V] minimum voltage below which the motor stops operating
-    float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
+    float dc_bus_undervoltage_trip_level = 17.5f;//DEFAULT_MIN_DC_VOLTAGE;      //<! [V] minimum voltage below which the motor stops operating
+    float dc_bus_overvoltage_trip_level = 40.0f;//1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
@@ -108,7 +108,7 @@ struct BoardConfig_t {
                                                                     //!< otherwise the ramp feature is disabled.
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
-    float dc_max_negative_current = -0.01f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
+    float dc_max_negative_current = -10.0f;//-INFINITY;//-10.0f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     uint32_t error_gpio_pin = DEFAULT_ERROR_PIN;
     PWMMapping_t pwm_mappings[4];
     PWMMapping_t analog_mappings[GPIO_COUNT];

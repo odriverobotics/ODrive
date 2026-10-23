@@ -27,15 +27,16 @@ endif
 
 $(info board version: $(CONFIG_BOARD_VERSION))
 
-all:
+# Build firmware only (skip Python script generation)
+firmware:
 	@mkdir -p autogen
-	@$(PY_CMD) ../tools/odrive/version.py --output autogen/version.c
 	@tup --quiet -no-environ-check
-	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
-	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/arduino_enums_template.j2 --output ../Arduino/ODriveArduino/ODriveEnums.h
-	@cd ../tools/ && $(PY_CMD) create_can_dbc.py
+
+# qiaoxu fix: 原来没有 all 规则, 导致 flash 不会重新编译
+all: firmware
 
 # Copy libfibre files to odrivetool if they were built
+libfibre-copy:
 	@ ! test -f "fibre-cpp/build/libfibre-linux-amd64.so" || cp fibre-cpp/build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-linux-armhf.so" || cp fibre-cpp/build/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-linux-aarch64.so" || cp fibre-cpp/build/libfibre-linux-aarch64.so ../tools/odrive/pyfibre/fibre/
@@ -63,10 +64,12 @@ libfibre-all:
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
-flash-stlink2: all
+# qiaoxu fix: 必须刷 HEX(只含 0x0800C000 起的真实数据),
+# 刷 ELF 会把 ELF 头/填充写到 0x08000000..0x0800BFFF, 冲掉 boot 和 0x08008000 的 app1_ok 标志
+flash-stlink2: firmware
 	$(OPENOCD) \
 		-c 'reset halt' \
-		-c 'flash write_image erase $(FIRMWARE)' \
+		-c 'flash write_image erase $(FIRMWARE_HEX)' \
 		-c 'reset run' \
 		-c exit
 
@@ -106,4 +109,4 @@ unlock: unlock-stlink2
 
 .PHONY: stlink2-config flash-stlink2 gdb-stlink2 erase-stlink2 unlock-stlink2
 .PHONY: flash-bmp gdb-bmp
-.PHONY: all clean flash gdb erase unlock dfu fibre
+.PHONY: all clean flash gdb erase unlock dfu fibre firmware libfibre-copy

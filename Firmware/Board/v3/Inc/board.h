@@ -25,7 +25,39 @@
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
 #else
-#define SHUNT_RESISTANCE (500e-6f)
+//#define SHUNT_RESISTANCE (500e-6f)
+#define SHUNT_RESISTANCE (2e-3f)  //产品板
+#endif
+
+//qiaoxu add: 编码器类型 (二选一, 必须且只能定义一个)
+//  ENCODER_USE_HALL        : 霍尔, cpr = 24
+//  ENCODER_USE_SPI_ABS_AMS : AS5047P 磁编, cpr = 16384, 支持 CAN 0x277 零位标定/OTP 烧写
+#define ENCODER_USE_SPI_ABS_AMS
+//#define ENCODER_USE_HALL
+#define DEBUG_USB       //是否用USB调试，打开的话不发CAN ID = 0x274
+//qiaoxu add: 驻坡增益调度开关
+//  定义   : 零速附近检测到较大 Iq 时临时提高 vel_gain / vel_integrator_gain (原行为)
+//  注释掉 : 关闭调度, 增益始终等于上位机通过 0x208 / 0x221 下发的基准 PID
+//  用途   : A/B 对比, 判断振荡是否由该调度引入
+#define ENABLE_ZHUPO_GAIN_SCHED
+
+//qiaoxu add: 通信外设裁剪开关 (不用的外设注释掉, 对应代码不参与编译, 可减小固件体积)
+//  USE_UART_A : UART4   (GPIO1/GPIO2, ODrive 的 uart0)
+//  USE_UART_B : USART2  (GPIO3/GPIO4, ODrive 的 uart1)
+//  USE_UART_C : 预留, 本板未接
+//  USE_I2C_A  : I2C1    (GPIO13/GPIO14, 与 CAN_R/CAN_D 复用)
+//#define USE_UART_A
+//#define USE_UART_B
+//#define USE_UART_C
+//#define USE_I2C_A
+
+//qiaoxu add: 通信协议裁剪开关
+//  USE_ASCII_PROTOCOL : USB CDC / UART 上的 ASCII 文本协议 ("p 0 1.0"、"r vbus_voltage" 等)
+//                       本机走 CAN + fibre(odrivetool), 不用 ASCII 文本协议, 关闭可省 ~29KB
+//#define USE_ASCII_PROTOCOL
+
+#if defined(USE_UART_A) || defined(USE_UART_B) || defined(USE_UART_C)
+#define USE_UART_ANY
 #endif
 
 #define AXIS_COUNT (2)
@@ -46,10 +78,19 @@
 #define DEFAULT_ERROR_PIN 0
 #define DEFAULT_MIN_DC_VOLTAGE 8.0f
 
+//qiaoxu add: 裁剪掉 UART_A 时 GPIO1/GPIO2 不再默认复用为 UART
+#ifdef USE_UART_A
+#define DEFAULT_GPIO_MODE_1 ODriveIntf::GPIO_MODE_UART_A
+#define DEFAULT_GPIO_MODE_2 ODriveIntf::GPIO_MODE_UART_A
+#else
+#define DEFAULT_GPIO_MODE_1 ODriveIntf::GPIO_MODE_DIGITAL
+#define DEFAULT_GPIO_MODE_2 ODriveIntf::GPIO_MODE_DIGITAL
+#endif
+
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
-    ODriveIntf::GPIO_MODE_UART_A, \
-    ODriveIntf::GPIO_MODE_UART_A, \
+    DEFAULT_GPIO_MODE_1, \
+    DEFAULT_GPIO_MODE_2, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \

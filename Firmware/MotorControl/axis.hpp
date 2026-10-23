@@ -31,6 +31,12 @@ public:
         bool finish_on_enc_idx = false;
     };
 
+    // 自定义轴状态：把转子锁定在电角度 0（开环直流对齐）。
+    // 取值 14，排在 ENCODER_HALL_PHASE_CALIBRATION(13) 之后，避开 ODrive 官方已占用的值。
+    // 注意：这里刻意不改 odrive-interface.yaml / autogen，避免每次重新生成时被覆盖。
+    static constexpr ODriveIntf::AxisIntf::AxisState AXIS_STATE_PHASE_LOCK_ZERO =
+            static_cast<ODriveIntf::AxisIntf::AxisState>(14);
+
     struct TaskTimes {
         TaskTimer thermistor_update;
         TaskTimer encoder_update;
@@ -52,8 +58,8 @@ public:
     static LockinConfig_t default_lockin();
 
     struct CANConfig_t {
-        uint32_t node_id = 0;
-        bool is_extended = false;
+        uint32_t node_id = 2;//qiaoxu modify
+        bool is_extended = true;//qiaoxu modify
         uint32_t heartbeat_rate_ms = 100;
         uint32_t encoder_rate_ms = 10;
         uint32_t motor_error_rate_ms = 0;
@@ -94,6 +100,13 @@ public:
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t general_lockin;
 
+        // 电角度 0 锁定（由 CAN 0x277 指令触发）的幅值与爬升时间。
+        // 电机已校准（相电阻/电感有效）时用电流环，取 phase_lock_current [A]；
+        // 电机未校准时用电压模式，取 phase_lock_voltage [V]，靠 motor.config.current_lim 做过流保护。
+        float phase_lock_current = 10.0f;   // [A]
+        float phase_lock_voltage = 1.0f;    // [V]
+        float phase_lock_ramp_time = 0.4f;  // [s]
+
         CANConfig_t can;
 
         // custom setters
@@ -107,13 +120,14 @@ public:
     };
 
     struct CAN_t {
-        uint32_t last_heartbeat = 0;
-        uint32_t last_encoder = 0;
-        uint32_t last_motor_error = 0;
-        uint32_t last_encoder_error = 0;
+        uint32_t last_heartbeat = 0;        // 0x274
+        uint32_t last_encoder = 0;          // 0x21C 速度反馈
+        uint32_t last_motor_error = 0;      // 0x272/0x273
+        uint32_t last_encoder_error = 0;    // 0x275/0x276
         uint32_t last_controller_error = 0;
         uint32_t last_sensorless_error = 0;
-        uint32_t last_encoder_count = 0;
+        uint32_t last_encoder_count = 0;    // 0x21A/0x21E
+        uint32_t last_axis_error = 0;       // 0x270/0x271
         uint32_t last_iq = 0;
         uint32_t last_sensorless = 0;
         uint32_t last_bus_vi = 0;
@@ -156,6 +170,7 @@ public:
     bool stop_closed_loop_control();
     bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
                 std::function<bool(bool)> loop_cb = {} );
+    bool run_phase_lock_zero();
     bool run_closed_loop_control_loop();
     bool run_homing();
     bool run_idle_loop();

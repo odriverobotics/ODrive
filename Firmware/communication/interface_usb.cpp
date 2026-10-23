@@ -1,6 +1,6 @@
 
 #include "interface_usb.h"
-#include "ascii_protocol.hpp"
+#include "ascii_protocol.hpp" //qiaoxu: 纯头文件, 不产生代码; 是否启用由 USE_ASCII_PROTOCOL 控制
 
 #include <MotorControl/utils.hpp>
 
@@ -150,7 +150,9 @@ LegacyProtocolPacketBased fibre_over_usb(&usb_native_rx_stream, &usb_native_tx_s
 
 fibre::AsyncStreamSinkMultiplexer<2> usb_cdc_tx_multiplexer(usb_cdc_tx_stream);
 fibre::BufferedStreamSink<64> usb_cdc_stdout_sink(usb_cdc_tx_multiplexer); // Used in communication.cpp
+#ifdef USE_ASCII_PROTOCOL
 AsciiProtocol ascii_over_cdc(&usb_cdc_rx_stream, &usb_cdc_tx_multiplexer);
+#endif
 
 bool usb_cdc_stdout_pending = false;
 
@@ -177,10 +179,13 @@ static void usb_server_thread(void * ctx) {
 
                 if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_FIBRE) {
                     fibre_over_cdc.start({});
-                } else if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
+                }
+#ifdef USE_ASCII_PROTOCOL
+                else if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
                         || odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
                     ascii_over_cdc.start();
                 }
+#endif
             } break;
 
             case 2: { // USB disconnected event

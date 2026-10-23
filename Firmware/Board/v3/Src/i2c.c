@@ -53,6 +53,9 @@
 #include "gpio.h"
 #include "dma.h"
 
+//qiaoxu add: 引入 USE_I2C_A 外设裁剪开关
+#include "board.h"
+
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -61,6 +64,7 @@ I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c1_tx;
 
+#ifdef USE_I2C_A
 /* I2C1 init function */
 void MX_I2C1_Init(uint8_t addr)
 {
@@ -80,10 +84,13 @@ void MX_I2C1_Init(uint8_t addr)
   }
 
 }
+#endif /* USE_I2C_A */
 
 void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 {
+  (void)i2cHandle;
 
+#ifdef USE_I2C_A
   if(i2cHandle->Instance==I2C1)
   {
   /* USER CODE BEGIN I2C1_MspInit 0 */
@@ -139,11 +146,14 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 
   /* USER CODE END I2C1_MspInit 1 */
   }
+#endif /* USE_I2C_A */
 }
 
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 {
+  (void)i2cHandle;
 
+#ifdef USE_I2C_A
   if(i2cHandle->Instance==I2C1)
   {
   /* USER CODE BEGIN I2C1_MspDeInit 0 */
@@ -169,6 +179,7 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
   /* USER CODE END I2C1_MspDeInit 1 */
   }
+#endif /* USE_I2C_A */
 } 
 
 /* USER CODE BEGIN 1 */

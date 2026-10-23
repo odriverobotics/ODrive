@@ -267,21 +267,33 @@ void vApplicationIdleHook(void) {
         std::transform(axes.begin(), axes.end(), std::begin(min_stack_space), [](auto& axis) { return uxTaskGetStackHighWaterMark(axis.thread_id_) * sizeof(StackType_t); });
         odrv.system_stats_.max_stack_usage_axis = axes[0].stack_size_ - *std::min_element(std::begin(min_stack_space), std::end(min_stack_space));
         odrv.system_stats_.max_stack_usage_usb = stack_size_usb_thread - uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+#ifdef USE_UART_ANY
         odrv.system_stats_.max_stack_usage_uart = stack_size_uart_thread - uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+#else
+        odrv.system_stats_.max_stack_usage_uart = 0;
+#endif
         odrv.system_stats_.max_stack_usage_startup = stack_size_default_task - uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_can = odrv.can_.stack_size_ - uxTaskGetStackHighWaterMark(odrv.can_.thread_id_) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_analog =  stack_size_analog_thread - uxTaskGetStackHighWaterMark(analog_thread) * sizeof(StackType_t);
 
         odrv.system_stats_.stack_size_axis = axes[0].stack_size_;
         odrv.system_stats_.stack_size_usb = stack_size_usb_thread;
+#ifdef USE_UART_ANY
         odrv.system_stats_.stack_size_uart = stack_size_uart_thread;
+#else
+        odrv.system_stats_.stack_size_uart = 0;
+#endif
         odrv.system_stats_.stack_size_startup = stack_size_default_task;
         odrv.system_stats_.stack_size_can = odrv.can_.stack_size_;
         odrv.system_stats_.stack_size_analog = stack_size_analog_thread;
 
         odrv.system_stats_.prio_axis = osThreadGetPriority(axes[0].thread_id_);
         odrv.system_stats_.prio_usb = osThreadGetPriority(usb_thread);
+#ifdef USE_UART_ANY
         odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
+#else
+        odrv.system_stats_.prio_uart = 0;
+#endif
         odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
         odrv.system_stats_.prio_can = osThreadGetPriority(odrv.can_.thread_id_);
         odrv.system_stats_.prio_analog = osThreadGetPriority(analog_thread);
@@ -396,7 +408,9 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.sensorless_estimator_.vel_estimate_.reset();
         }
 
+#ifdef USE_UART_ANY
         uart_poll();
+#endif
         odrv.oscilloscope_.update();
     }
 
@@ -675,6 +689,39 @@ extern "C" int main(void) {
         config_apply_all();
     }
 
+    //qiaoxu add: 编译期被裁剪掉的通信外设强制关闭, 并把对应 GPIO 模式回退为普通数字口,
+    //避免设备里残留的旧 NVM 配置(如 enable_uart_a=true / gpio_modes=UART_A)导致 misconfigured
+#ifndef USE_UART_A
+    odrv.config_.enable_uart_a = false;
+    for (auto& mode : odrv.config_.gpio_modes) {
+        if (mode == ODriveIntf::GPIO_MODE_UART_A) mode = ODriveIntf::GPIO_MODE_DIGITAL;
+    }
+#endif
+#ifndef USE_UART_B
+    odrv.config_.enable_uart_b = false;
+    for (auto& mode : odrv.config_.gpio_modes) {
+        if (mode == ODriveIntf::GPIO_MODE_UART_B) mode = ODriveIntf::GPIO_MODE_DIGITAL;
+    }
+#endif
+#ifndef USE_UART_C
+    odrv.config_.enable_uart_c = false;
+    for (auto& mode : odrv.config_.gpio_modes) {
+        if (mode == ODriveIntf::GPIO_MODE_UART_C) mode = ODriveIntf::GPIO_MODE_DIGITAL;
+    }
+#endif
+#ifndef USE_I2C_A
+    odrv.config_.enable_i2c_a = false;
+    for (auto& mode : odrv.config_.gpio_modes) {
+        if (mode == ODriveIntf::GPIO_MODE_I2C_A) mode = ODriveIntf::GPIO_MODE_DIGITAL;
+    }
+#endif
+#ifndef USE_ASCII_PROTOCOL
+    //qiaoxu add: 没有编译 ASCII 协议时, 把 CDC 串口降级为纯 stdout(printf), 否则协议字段会指向不存在的解析器
+    if (odrv.config_.usb_cdc_protocol == ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII ||
+        odrv.config_.usb_cdc_protocol == ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
+        odrv.config_.usb_cdc_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_STDOUT;
+    }
+#endif
     odrv.misconfigured_ = odrv.misconfigured_
             || (odrv.config_.enable_uart_a && !uart_a)
             || (odrv.config_.enable_uart_b && !uart_b)
@@ -818,6 +865,50 @@ extern "C" int main(void) {
         HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
     }
 
+    //qiaoxu 抱闸控制 axis0-gpio8 axis1-gpio5
+    get_gpio(8).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL); 
+    get_gpio(5).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL); 
+    // get_gpio(8).write(true);//开闸
+    // get_gpio(5).write(true);
+    // get_gpio(8).write(false);//抱闸
+    // get_gpio(5).write(false);
+    //qiaoxu 手动抱闸检测 axis0-gpio3 axis1-gpio4
+    get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+    get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+
+    // 不论霍尔还是磁编: 磁编的 CS 必须一直保持高电平(未选中),
+    // 否则它会在 SPI3 上抢 MISO, 导致 DRV8301 寄存器回读失败 -> 双轴 DRV 故障
+    get_gpio(7).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);   // M0 AS5047 CS
+    get_gpio(7).write(true);
+    get_gpio(6).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);   // M1 AS5047 CS
+    get_gpio(6).write(true);
+    //qiaoxu
+#ifdef ENCODER_USE_SPI_ABS_AMS
+    // 磁编电机，每次进闭环都会被覆盖。
+    axes[0].encoder_.config_.abs_spi_cs_gpio_pin = 7;
+    axes[0].encoder_.abs_spi_cs_pin_init();
+    axes[0].encoder_.config_.direction = -1;
+    axes[0].motor_.config_.set_current_control_bandwidth(1000.0f);
+    axes[1].encoder_.config_.abs_spi_cs_gpio_pin = 6;
+    axes[1].encoder_.abs_spi_cs_pin_init();
+    axes[1].encoder_.config_.direction = 1;
+    axes[1].motor_.config_.set_current_control_bandwidth(1000.0f);
+#endif
+
+#ifdef ENCODER_USE_HALL
+    axes[0].encoder_.config_.mode = Encoder::MODE_HALL;
+    axes[0].encoder_.config_.direction = 1;
+    axes[0].motor_.config_.set_current_control_bandwidth(96.0f);
+    axes[1].encoder_.config_.direction = 1;
+    axes[1].motor_.config_.set_current_control_bandwidth(96.0f);
+#endif
+
+    axes[0].motor_.config_.current_lim = 46.0f;   //增大电流，用于越障
+    axes[1].motor_.config_.current_lim = 46.0f;  
+    odrv.config_.dc_bus_undervoltage_trip_level = 17.5f;//思商电池：规格书放电截止电压21V，BMS实际是2.8*7=19.6V停止供电，3*7=21V恢复供电。控制器欠压保护值由21V改为2.5*7=17.5V    
+
+    //axes[1].encoder_.config_.mode = Encoder::MODE_HALL;
+    ///////////////////////////////////////////
     // Init usb irq binary semaphore, and start with no tokens by removing the starting one.
     osSemaphoreDef(sem_usb_irq);
     sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
