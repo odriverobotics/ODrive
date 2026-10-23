@@ -341,6 +341,9 @@ void CANSimple::can_message_callback(void* ctx, const can_Message_t& msg) {
     static_cast<CANSimple*>(ctx)->handle_can_message(msg);
 }
 
+// 前向声明: 定义在下方 "磁编 AS5047P 零位标定" 一节, 这里分发时要用
+static bool as5047_has_cmd_tail(const can_Message_t& msg);
+
 void CANSimple::handle_can_message(const can_Message_t& msg) {
     if (!msg.isExt) {
         return;
@@ -361,9 +364,10 @@ void CANSimple::handle_can_message(const can_Message_t& msg) {
             get_vbus_voltage_callback(msg);
             break;
 
-        case MSG_SET_VLAGO_INPUT_VEL:  // 0x219 上控速度指令
-        case MSG_SET_UP_CONTROLL_VEL:  // 0x220 上控速度指令
-        case MSG_SET_VLAGO_ADC:        // 0x279 摇杆 ADC (本地摇杆控车)
+        //case 0x290:        
+        case MSG_SET_VLAGO_INPUT_VEL:  // 0x219 域控速度指令
+        //case MSG_SET_UP_CONTROLL_VEL:  // 0x220 上控速度指令
+        //case MSG_SET_VLAGO_ADC:        // 0x279 摇杆 ADC (本地摇杆控车)
             set_vlago_input_vel_callback(msg);
             break;
 
@@ -387,9 +391,23 @@ void CANSimple::handle_can_message(const can_Message_t& msg) {
             get_vlago_version_callback(msg);
             break;
 
-        case MSG_IDENTIFY:  // 0x277 识别/校准
-            identify_callback(msg);
-            break;
+        case MSG_IDENTIFY: {  // 0x277: 磁编零位标定 (尾缀 01..07) 或 识别/校准 (尾缀 11..77)
+            // 两者共用 0x277, 靠 byte1~byte7 的固定尾缀区分, 互不重叠
+            if (as5047_has_cmd_tail(msg)) {
+                const uint8_t sub = msg.buf[0];
+                if (sub == 0x00) {
+                    as5047_read_diag_callback(msg);      // 读磁场强度/诊断
+                } else if (sub == 0x33) {
+                    as5047_zero_offset_callback(msg);    // 软写 ZPOS (易失)
+                } else if (sub == 0x44) {
+                    as5047_burn_otp_callback(msg);       // 烧 OTP (不可逆)
+                } else {
+                    phase_lock_zero_callback(msg);       // 0x11 锁定 / 0x22 退出
+                }
+            } else {
+                identify_callback(msg);
+            }
+        } break;
 
         case MSG_OTA_RESET:  // 0x701 OTA 复位
             handle_ota_message(msg);
@@ -717,6 +735,297 @@ void CANSimple::get_vlago_version_callback(const can_Message_t& msg) {
     canbus_->send_message(txmsg);
 }
 
+/* ------------------------------------------------------------------------- */
+/* 磁编 AS5047P 零位标定: CAN 0x277 (命令) / 0x278 (应答)                        */
+/* byte1~byte7 = 01 02 03 04 05 06 07 固定校验字, 与识别命令 (11..77) 区分       */
+/* ------------------------------------------------------------------------- */
+
+// 校验 byte1~byte7 固定尾缀 01 02 03 04 05 06 07
+static bool as5047_has_cmd_tail(const can_Message_t& msg) {
+    static const uint8_t expected[7] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    if (msg.len < 8) {
+        return false;
+    }
+    for (size_t i = 0; i < sizeof(expected); ++i) {
+        if (msg.buf[i + 1] != expected[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 0x278 应答: byte0 = 命令回显, byte1 = 数据高 8 位, byte2 = 数据低 8 位,
+//            byte3 = 结果码 (0/未用 = 成功, 非 0 = 失败原因), byte4-7 = 0
+void CANSimple::send_count_reply(uint8_t cmd_echo, uint16_t count, uint8_t code) {
+    can_Message_t txmsg;
+    txmsg.id = PHASE_LOCK_REPLY_MSG_ID;
+    txmsg.isExt = true;
+    txmsg.len = 8;
+    can_setSignal<uint8_t>(txmsg, cmd_echo, 0, 8, true);
+    can_setSignal<uint8_t>(txmsg, (uint8_t)(count >> 8), 8, 8, true);     // byte1 = 高 8 位
+    can_setSignal<uint8_t>(txmsg, (uint8_t)(count & 0xffu), 16, 8, true); // byte2 = 低 8 位
+    can_setSignal<uint8_t>(txmsg, code, 24, 8, true);                     // byte3 = 结果码
+    // byte4-7 已经是 0
+
+    canbus_->send_message(txmsg);
+}
+
+// 0x278 诊断应答: byte0 = 命令回显(0x00), byte1/2 = 磁场强度, byte3 = 诊断状态位,
+//                byte4 = AGC 值, byte5-7 = 0
+void CANSimple::send_diag_reply(uint8_t cmd_echo, uint16_t magnitude, uint8_t status, uint8_t agc) {
+    can_Message_t txmsg;
+    txmsg.id = PHASE_LOCK_REPLY_MSG_ID;
+    txmsg.isExt = true;
+    txmsg.len = 8;
+    can_setSignal<uint8_t>(txmsg, cmd_echo, 0, 8, true);
+    can_setSignal<uint8_t>(txmsg, (uint8_t)(magnitude >> 8), 8, 8, true);     // byte1 = 高 8 位
+    can_setSignal<uint8_t>(txmsg, (uint8_t)(magnitude & 0xffu), 16, 8, true); // byte2 = 低 8 位
+    can_setSignal<uint8_t>(txmsg, status, 24, 8, true);                       // byte3 = 状态位
+    can_setSignal<uint8_t>(txmsg, agc, 32, 8, true);                          // byte4 = AGC
+    // byte5-7 已经是 0
+
+    canbus_->send_message(txmsg);
+}
+
+// 0x00: 读 AS5047 的磁场强度和诊断信息 (仅 axis0)
+// 流程: 读 MAG(0x3FFD) → 读 DIAAGC(0x3FFC), 纯读操作、无副作用
+// 应答 byte3 状态位: bit0 = LF 偏移补偿完成, bit1 = COF CORDIC 溢出,
+//                    bit2 = MAGH 磁场过强, bit3 = MAGL 磁场过弱
+void CANSimple::as5047_read_diag_callback(const can_Message_t& msg) {
+    if (!as5047_has_cmd_tail(msg)) {
+        return;
+    }
+
+    const uint16_t INVALID = 0xffffu;
+    uint16_t magnitude = INVALID;
+    uint16_t diaagc = INVALID;
+
+    axes[0].watchdog_feed();
+    const bool ok = axes[0].encoder_.as5047_read_diagnostics(&magnitude, &diaagc, 50);
+    axes[0].watchdog_feed();
+
+    if (!ok) {
+        send_diag_reply(0x00, INVALID, 0xffu, 0xffu);
+        return;
+    }
+
+    // DIAAGC 位定义 (手册 Figure 21): bit8=LF, bit9=COF, bit10=MAGH, bit11=MAGL, bit7:0=AGC
+    const uint8_t status = (uint8_t)((((diaagc >> 8) & 0x1u) << 0)    // bit0 = LF
+                                   | (((diaagc >> 9) & 0x1u) << 1)    // bit1 = COF
+                                   | (((diaagc >> 10) & 0x1u) << 2)   // bit2 = MAGH
+                                   | (((diaagc >> 11) & 0x1u) << 3)); // bit3 = MAGL
+
+    send_diag_reply(0x00, magnitude, status, (uint8_t)(diaagc & 0xffu));
+}
+
+// 0x11 期间读到的"电气 0 处的真实原始计数", 供 0x33 / 0x44 使用。
+// 必须是 0x11 当时的值: 写 ZPOS 是**整体平移刻度**, 只要 X 是在电气 0 位置测到的,
+// 之后无论转子停在哪里, 计数都会恰好在电气 0 处归零。若让 0x33 现场重读,
+// 转子一旦漂移开 (0x22 解锁之后是常事) 就会把错误的零位固化下来。
+static uint16_t as5047_cached_zero = 0xffffu;
+
+// 上电后是否已经往 ZPOSM/ZPOSL 软写过东西。
+// OTP 烧写前必须为 false —— 只有"没被软写过"时, 读回的 ZPOS 才等于 OTP 里的内容,
+// 才能用"ZPOS 是否为 0"判断这颗芯片的 OTP 是否已经烧过。
+static bool as5047_volatile_touched = false;
+
+// OTP 序列是否正在进行 (结果由 service_stack() 每轮循环上报, 故意不阻塞 CAN 线程)
+static bool as5047_otp_pending = false;
+
+// 等 AXIS_STATE_PHASE_LOCK_ZERO 真正跑起来并且转子对齐到位
+static bool wait_for_phase_lock_zero(Axis& axis) {
+    // 1) 等状态机进入该状态
+    bool entered = false;
+    for (uint32_t i = 0; i < 500; ++i) {
+        axis.watchdog_feed();
+        if (axis.current_state_ == Axis::AXIS_STATE_PHASE_LOCK_ZERO) {
+            entered = true;
+            break;
+        }
+        osDelay(1);
+    }
+    if (!entered) {
+        return false;
+    }
+
+    // 2) 电流按 phase_lock_ramp_time 爬到设定值, 再留一段固定稳定时间给转子对齐
+    uint32_t settle_ms = (uint32_t)(axis.config_.phase_lock_ramp_time * 1000.0f) + 200u;
+    for (uint32_t i = 0; i < settle_ms; ++i) {
+        axis.watchdog_feed();
+        osDelay(1);
+    }
+    return true;
+}
+
+// 电角度 0 锁定 (0x11) / 退出锁定 (0x22)
+//   byte0 = 0x11 : 锁定到电角度 0 → 读计数 X → 设好软件侧对齐参数, 应答 0x278
+//   byte0 = 0x22 : 退出锁定 (回到 IDLE, disarm), 无应答
+void CANSimple::phase_lock_zero_callback(const can_Message_t& msg) {
+    if (!as5047_has_cmd_tail(msg)) {
+        return; // 校验字不符, 忽略整帧
+    }
+
+    const uint8_t cmd = can_getSignal<uint8_t>(msg, 0, 8, true);
+
+    // ---- 0x22: 退出锁定 ----
+    // 把 requested_state_ 从 UNDEFINED 改掉, run_phase_lock_zero() 的等待循环就会退出
+    if (cmd == 0x22) {
+        axes[0].requested_state_ = Axis::AXIS_STATE_IDLE;
+        axes[0].watchdog_feed();
+        return; // 无应答
+    }
+
+    if (cmd != 0x11) {
+        return;
+    }
+
+    // ---- 0x11: 锁定到电角度 0 → 读计数 X → 设好软件侧对齐参数 ----
+    // run_phase_lock_zero() 是开环直流对齐: 定子磁场固定在定子空间的电角度 0
+    // (phase 源切到 open_loop_controller_.phase_, 不经过编码器),
+    // 所以转子确实被拉到真实电角度 0, 与当前 phase_offset 对不对无关。
+    axes[0].watchdog_feed();
+    axes[0].requested_state_ = Axis::AXIS_STATE_PHASE_LOCK_ZERO;
+
+    uint16_t x = 0xffffu;
+
+    if (wait_for_phase_lock_zero(axes[0]) &&
+        axes[0].encoder_.as5047_wait_still(500, 4)) {
+
+        uint16_t zpos_now = 0xffffu;
+        uint16_t count = 0xffffu;
+
+        // 这里刻意**不写** ZPOS: 一是无副作用, 反复执行不会像早先那样把偏移一轮轮叠加;
+        // 二是保证上电后读到的 ZPOS 始终等于 OTP 里的内容, 0x44 才能判断是否已烧过
+        if (axes[0].encoder_.as5047_read_zero_and_count(&zpos_now, &count)) {
+            // 硬件零位是 zpos_now, 所以 ANGLECOM = (原始角 - zpos_now) mod 16384,
+            // 反解出真实原始角 X —— 这才是要写进 ZPOS 的值
+            x = (uint16_t)((count + zpos_now) & 0x3fffu);
+            as5047_cached_zero = x;
+
+            // 当前硬件零位是 zpos_now, 电气 0 处的计数就是 count, 所以软件侧等效偏移
+            // (phase_offset + phase_offset_float - 0.5) 必须等于 count
+            axes[0].encoder_.config_.phase_offset = (int32_t)count;
+            axes[0].encoder_.config_.phase_offset_float = 0.5f;
+            // 这里必须直接赋值而不是用 setter: setter 会触发 check_pre_calibrated(),
+            // 而 is_ready_ 恰恰要等 pre_calibrated 为 true 之后才由 abs_spi_cb 置起,
+            // 走 setter 会互相等待、永远置不上 (死锁)
+            axes[0].encoder_.config_.pre_calibrated = true;
+            axes[0].watchdog_feed();
+        }
+    }
+
+    send_count_reply(0x11, x);
+}
+
+// 0x33: 把 0x11 读到的 X 写入 ZPOSM/ZPOSL (仅 axis0)
+// 应答 0x278: byte0 = 0x33, byte1/2 = 写入后读回的计数 (应 ≈ 0)
+//             byte1 = byte2 = 0xFF 表示失败: 没先发 0x11 / 轴未静止 / ZPOS 写入校验没过
+//
+// 注意这里用的是 0x11 缓存的 X 而不是现场重读: 写 ZPOS 是整体平移刻度, 只要 X 是
+// 在电气 0 位置测到的, 之后无论转子停在哪里, 计数都会恰好在电气 0 处归零。
+void CANSimple::as5047_zero_offset_callback(const can_Message_t& msg) {
+    if (!as5047_has_cmd_tail(msg)) {
+        return;
+    }
+
+    if (as5047_cached_zero == 0xffffu) {
+        // 没先发过 0x11, 没有可用的 X
+        send_count_reply(0x33, 0xffffu);
+        return;
+    }
+
+    const uint16_t x = as5047_cached_zero;
+    axes[0].watchdog_feed();
+
+    // 轴必须静止, 否则写 ZPOS 前后读数会漂
+    if (!axes[0].encoder_.as5047_wait_still(500, 4)) {
+        send_count_reply(0x33, 0xffffu);
+        return;
+    }
+
+    uint16_t count = 0xffffu;
+    uint16_t zposm_rb = 0xffffu;
+    if (!axes[0].encoder_.as5047_write_zpos(x, &count, &zposm_rb) ||
+        zposm_rb != (uint16_t)((x >> 6) & 0x00ffu)) {
+        // ZPOSM 读回值和写入值不符, 说明没写进去, 此时不能动 phase_offset
+        send_count_reply(0x33, 0xffffu);
+        return;
+    }
+
+    // 硬件零位现在是 x, 即计数在电气 0 处归零, 故软件侧等效偏移必须为 0
+    // (phase_offset + phase_offset_float - 0.5 = 0)
+    axes[0].encoder_.config_.phase_offset = 0;
+    axes[0].encoder_.config_.phase_offset_float = 0.5f;
+    axes[0].encoder_.config_.pre_calibrated = true;
+    as5047_volatile_touched = true; // ZPOS 被软写过了, 之后再想烧 OTP 必须先重新上电
+    axes[0].watchdog_feed();
+
+    send_count_reply(0x33, count);
+}
+
+// 0x44: 把 0x11 读到的 X 烧进 OTP (**不可逆, 只能烧一次**)
+// 应答分两条 (ID 都是 0x278, DLC = 8): byte0 = 0x44, byte1/2 = 相关值, byte3 = 结果码
+//   第 1 条 (立即): byte1/2 = 0xFFFF, byte3 = 0 表示"已开始", 非 0 为拒绝启动的原因码
+//   第 2 条 (序列跑完后由 service_stack 主动上报): byte3 = 最终结果码, byte1/2 = 从 OTP 重建的零位
+//   结果码: 0=成功(仅第1条) 1=SPI 超时 2=烧前比对不符 3=PROG 轮询超时 4=烧后比对不符
+//           5=OTP 已烧过 6=前置条件不满足 7=上一次烧写还在进行中
+//
+// ★ 关键: 这里**绝不阻塞等待**。整条序列要跑几十到几百毫秒, 把 CAN 线程占住会让
+//   HAL_CAN 的错误码被置起来, 而 can_server_thread 只处理 NONE/TIMEOUT, 其余会掉进
+//   死循环 —— 那正是 CAN 彻底卡死的根源 (已在 odrive_can.cpp 里修掉)。
+void CANSimple::as5047_burn_otp_callback(const can_Message_t& msg) {
+    if (!as5047_has_cmd_tail(msg)) {
+        return;
+    }
+
+    if (as5047_otp_pending) {
+        send_count_reply(0x44, 0xffffu, 7); // 上一次还没跑完
+        return;
+    }
+
+    // 前置条件: 先发过 0x11 拿到 X; 上电后没往 ZPOS 软写过 (否则无法预检是否已烧过);
+    // 且不在闭环/锁定里 —— OTP 序列期间位置输出会失效, 带载运行会失控
+    if (as5047_cached_zero == 0xffffu || as5047_volatile_touched ||
+        axes[0].current_state_ != Axis::AXIS_STATE_IDLE) {
+        send_count_reply(0x44, 0xffffu, 6);
+        return;
+    }
+
+    axes[0].watchdog_feed();
+    if (!axes[0].encoder_.as5047_burn_otp_start(as5047_cached_zero, 3000)) {
+        send_count_reply(0x44, 0xffffu, 1);
+        return;
+    }
+    as5047_otp_pending = true;
+
+    send_count_reply(0x44, 0xffffu, 0); // 立即确认"已开始", 最终结果稍后单独上报
+}
+
+// 由 service_stack() 每轮 CAN 循环调用: OTP 序列跑完就主动上报结果
+void CANSimple::as5047_otp_report() {
+    if (!as5047_otp_pending) {
+        return;
+    }
+
+    uint16_t out_zpos = 0xffffu;
+    uint8_t fail = 0xff;
+    if (!axes[0].encoder_.as5047_burn_otp_poll(&out_zpos, &fail)) {
+        return; // 还在跑
+    }
+
+    as5047_otp_pending = false;
+
+    if (fail == 0) {
+        // 硬件零位已经永久变成 X, 电气 0 处计数归零, 故软件侧等效偏移必须为 0
+        axes[0].encoder_.config_.phase_offset = 0;
+        axes[0].encoder_.config_.phase_offset_float = 0.5f;
+        axes[0].encoder_.config_.pre_calibrated = true;
+        as5047_volatile_touched = true;
+    }
+
+    send_count_reply(0x44, out_zpos, fail);
+}
+
 // 0x277: 识别/校准命令, buf[1..7] 必须为 0x11..0x77
 void CANSimple::identify_callback(const can_Message_t& msg) {
     if (msg.len < 8) {
@@ -754,6 +1063,9 @@ void CANSimple::identify_callback(const can_Message_t& msg) {
                 odrv.save_configuration();
                 odrv.reboot();
             }
+            break;
+        case 6:
+            odrv.erase_configuration();//第一步需先擦掉配置，防止数据混乱,擦除后会复位            
             break;
         default:
             break;
@@ -1084,10 +1396,15 @@ uint32_t CANSimple::service_stack() {
 
     // 0x274 心跳/抱闸状态
     if ((budget > 0) && ((now - axes[0].can_.last_heartbeat) >= HEARTBEAT_PERIOD_MS)) {
-        //send_heartbeat();
+#ifndef DEBUG_USB
+        send_heartbeat();
+#endif
         axes[0].can_.last_heartbeat = now;
         budget--;
     }
+
+    // AS5047 OTP 序列跑完则主动上报结果 (非阻塞设计的另一半: 发起在 0x44 里, 结果在这里查)
+    as5047_otp_report();
 
     uint32_t next_service = remaining(axes[0].can_.last_encoder, VEL_ESTIMATE_PERIOD_MS);
     next_service = std::min(next_service, remaining(axes[0].can_.last_axis_error, AXIS_ERROR_PERIOD_MS));
@@ -1110,14 +1427,14 @@ typedef struct {
 
 __attribute__((section(".version_info"), used))
 const VersionInfo version_info = {
-    .software_version = 0x0107,
-    .publish_data = 0x20261013,
+    .software_version = 0x0108,
+    .publish_data = 0x20261020,
 };
 
 uint16_t get_hardware_version(void) {
     return *(volatile uint16_t*)(0x08000188);
 }
-
+ 
 uint32_t get_software_version(void) {
     return *(volatile uint32_t*)0x0800C188;
 }

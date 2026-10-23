@@ -888,19 +888,24 @@ extern "C" int main(void) {
     axes[0].encoder_.config_.abs_spi_cs_gpio_pin = 7;
     axes[0].encoder_.abs_spi_cs_pin_init();
     axes[0].encoder_.config_.direction = -1;
-    axes[0].motor_.config_.set_current_control_bandwidth(300.0f);
+    axes[0].motor_.config_.set_current_control_bandwidth(1000.0f);
     axes[1].encoder_.config_.abs_spi_cs_gpio_pin = 6;
     axes[1].encoder_.abs_spi_cs_pin_init();
     axes[1].encoder_.config_.direction = 1;
-    axes[1].motor_.config_.set_current_control_bandwidth(300.0f);
+    axes[1].motor_.config_.set_current_control_bandwidth(1000.0f);
 #endif
 
 #ifdef ENCODER_USE_HALL
+    axes[0].encoder_.config_.mode = Encoder::MODE_HALL;
     axes[0].encoder_.config_.direction = 1;
-    axes[0].motor_.config_.set_current_control_bandwidth(64.0f);
+    axes[0].motor_.config_.set_current_control_bandwidth(96.0f);
     axes[1].encoder_.config_.direction = 1;
-    axes[1].motor_.config_.set_current_control_bandwidth(64.0f);
+    axes[1].motor_.config_.set_current_control_bandwidth(96.0f);
 #endif
+
+    axes[0].motor_.config_.current_lim = 46.0f;   //增大电流，用于越障
+    axes[1].motor_.config_.current_lim = 46.0f;  
+    odrv.config_.dc_bus_undervoltage_trip_level = 17.5f;//思商电池：规格书放电截止电压21V，BMS实际是2.8*7=19.6V停止供电，3*7=21V恢复供电。控制器欠压保护值由21V改为2.5*7=17.5V    
 
     //axes[1].encoder_.config_.mode = Encoder::MODE_HALL;
     ///////////////////////////////////////////

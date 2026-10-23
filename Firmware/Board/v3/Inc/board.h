@@ -29,10 +29,12 @@
 #define SHUNT_RESISTANCE (2e-3f)  //产品板
 #endif
 
-//qiaoxu add
-//#define ENCODER_USE_SPI_ABS_AMS
-#define ENCODER_USE_HALL
-
+//qiaoxu add: 编码器类型 (二选一, 必须且只能定义一个)
+//  ENCODER_USE_HALL        : 霍尔, cpr = 24
+//  ENCODER_USE_SPI_ABS_AMS : AS5047P 磁编, cpr = 16384, 支持 CAN 0x277 零位标定/OTP 烧写
+#define ENCODER_USE_SPI_ABS_AMS
+//#define ENCODER_USE_HALL
+#define DEBUG_USB       //是否用USB调试，打开的话不发CAN ID = 0x274
 //qiaoxu add: 驻坡增益调度开关
 //  定义   : 零速附近检测到较大 Iq 时临时提高 vel_gain / vel_integrator_gain (原行为)
 //  注释掉 : 关闭调度, 增益始终等于上位机通过 0x208 / 0x221 下发的基准 PID

@@ -17,12 +17,13 @@
  *   0x229  驾驶模式 1-舒适 2-运动
  *   0x21B  抱闸控制 (并回读抱闸状态)
  *   0x21D  获取版本信息
- *   0x277  识别/校准命令
+ *   0x277  识别/校准命令 (尾缀 11 22 33 44 55 66 77)
+ *          或 磁编 AS5047P 零位标定 (尾缀 01 02 03 04 05 06 07, 见 PHASE_LOCK_REPLY_MSG_ID)
  *   0x279  摇杆 ADC 值 (本地摇杆控车, 差速/原地转圈模型)
  *   0x701  OTA 复位 (bootloader 接管)
  *
  * 发送 (扩展帧):
- *   0x217, 0x21A, 0x21C, 0x21D, 0x21E, 0x270~0x276
+ *   0x217, 0x21A, 0x21C, 0x21D, 0x21E, 0x270~0x276, 0x278 (磁编零位标定应答)
  *
  * 说明: 原来 ODrive 标准的 "nodeID<<5 | cmdID" 命令解析 (do_command) 已停用,
  *       现在完全按上面的固定 CAN ID 分发, 见 can_simple.cpp 的 switch (msg.id)。
@@ -77,6 +78,24 @@ class CANSimple {
     void get_vlago_version_callback(const can_Message_t& msg);     // 0x21D
     void identify_callback(const can_Message_t& msg);              // 0x277
     void handle_ota_message(const can_Message_t& msg);             // 0x701
+
+    // ---- 磁编 AS5047P 零位标定 / 电角度 0 锁定 / OTP 烧写: ID 0x277 (扩展帧), DLC = 8 ----
+    //   byte0 = 0x00 : 读 AS5047 磁场强度与诊断信息, 应答 0x278
+    //   byte0 = 0x11 : 锁定到电角度 0 → 读计数 X → 设好软件侧对齐参数, 应答 0x278
+    //   byte0 = 0x22 : 退出锁定 (回到 IDLE, disarm), 无应答
+    //   byte0 = 0x33 : 把 0x11 读到的 X 软写进 ZPOSM/ZPOSL (易失), 再读回计数, 应答 0x278
+    //   byte0 = 0x44 : 把 0x11 读到的 X 烧进 OTP (不可逆, 只能烧一次), 应答 0x278
+    //   byte1~byte7 = 01 02 03 04 05 06 07 固定校验字 (与 identify_callback 的尾缀区分)
+    static constexpr uint32_t PHASE_LOCK_REPLY_MSG_ID = 0x278;
+    void phase_lock_zero_callback(const can_Message_t& msg);      // 0x11 / 0x22
+    void as5047_read_diag_callback(const can_Message_t& msg);     // 0x00
+    void as5047_zero_offset_callback(const can_Message_t& msg);   // 0x33
+    void as5047_burn_otp_callback(const can_Message_t& msg);      // 0x44
+    void as5047_otp_report();                                     // OTP 结果上报 (service_stack 调用)
+    // 0x278 应答: byte0 = 命令回显, byte1/2 = 14bit 数据 (byte1 高 8 位), byte3 = 结果码
+    void send_count_reply(uint8_t cmd_echo, uint16_t count, uint8_t code = 0);
+    // 0x278 诊断应答: byte0 = 0x00, byte1/2 = 磁场强度, byte3 = 诊断状态位, byte4 = AGC
+    void send_diag_reply(uint8_t cmd_echo, uint16_t magnitude, uint8_t status, uint8_t agc);
 
     // ---- 发送 ----
     bool send_axis_error(Axis& axis, uint32_t msg_id);        // 0x270/0x271
